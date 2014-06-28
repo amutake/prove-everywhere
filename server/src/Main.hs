@@ -5,10 +5,6 @@ import Options.Applicative
 import ProveEverywhere.Types
 import ProveEverywhere.Server
 
-configParser :: Parser Config
-configParser = Config
-    <$> option (long "port" <> short 'p' <> metavar "PORT" <> help "Specify port number")
-
 main :: IO ()
 main = do
     config <- execParser opts
@@ -16,3 +12,7 @@ main = do
   where
     opts = info (helper <*> configParser) $
         fullDesc <> header "prove-everywhere-server - The server for ProveEverywhere"
+
+configParser :: Parser Config
+configParser = Config
+    <$> option (long "port" <> short 'p' <> metavar "PORT" <> help "Specify port number")
