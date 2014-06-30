@@ -9,6 +9,7 @@ import qualified Data.Text as T
 import Network.Wai.Handler.Warp (Port)
 import System.Process (ProcessHandle)
 import System.IO (Handle)
+import Text.Parsec (ParseError)
 
 data Config = Config
     { configPort :: Port
@@ -19,7 +20,7 @@ data Coqtop = Coqtop
     , coqtopStdout :: Handle
     , coqtopStderr :: Handle
     , coqtopProcessHandle :: ProcessHandle
-    , coqtopCount :: Int
+    , coqtopCount :: Integer
     }
 
 data CoqtopInfo = CoqtopInfo
@@ -33,12 +34,31 @@ instance ToJSON CoqtopInfo where
         , "message" .= infoCoqtopOutput info
         ]
 
-data ServerError = NoSuchCoqtopError
-    { errorCoqtopId :: Int
-    }
+data ServerError
+    = NoSuchCoqtopError
+        { errorCoqtopId :: Int
+        }
+    | PromptParseError
+        { errorParseError :: ParseError
+        }
 
 instance ToJSON ServerError where
     toJSON (NoSuchCoqtopError i) = object
-        [ "id" .= (0 :: Int)
-        , "message" .= ("No such coqtop id: " <> T.pack (show i))
+        [ "error" .= object
+              [ "id" .= (0 :: Int)
+              , "message" .= ("No such coqtop id: " <> T.pack (show i))
+              ]
         ]
+    toJSON (PromptParseError e) = object
+        [ "error" .= object
+              [ "id" .= (1 :: Int)
+              , "message" .= T.pack (show e)
+              ]
+        ]
+
+data Prompt = Prompt
+    { promptCurrentTheorem :: Text
+    , promptStateNumber :: Integer
+    , promptTheoremStack :: [Text]
+    , promptTheoremStateNumber :: Integer
+    }

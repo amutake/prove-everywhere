@@ -8,7 +8,7 @@ import Data.Aeson
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
-import Network.HTTP.Types (Status, status200, status404, hContentType)
+import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
 
@@ -32,13 +32,13 @@ server coqtopMap seed req respond =
   where
     start = do
         n <- fresh seed
-        (coqtop, o) <- startCoqtop
-        insert coqtopMap n coqtop
-        let res = CoqtopInfo
+        res <- handleError startCoqtop $ \(coqtop, o) -> do
+            insert coqtopMap n coqtop
+            return $ responseJSON status200 CoqtopInfo
                 { infoCoqtopId = n
                 , infoCoqtopOutput = o
                 }
-        respond $ responseJSON status200 res
+        respond res
     terminate n = do
         lookup coqtopMap n >>= \case
             Nothing -> do
@@ -66,3 +66,8 @@ delete coqtopMap n = modifyMVar_ coqtopMap (return . HM.delete n)
 responseJSON :: ToJSON a => Status -> a -> Response
 responseJSON status a =
     responseLBS status [(hContentType, "application/json")] (encode a)
+
+handleError :: IO (Either ServerError a) -> (a -> IO Response) -> IO Response
+handleError io cont = io >>= \case
+    Left e -> return $ responseJSON status500 e
+    Right a -> cont a
