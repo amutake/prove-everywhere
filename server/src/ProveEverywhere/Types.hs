@@ -3,7 +3,9 @@
 module ProveEverywhere.Types where
 
 import Data.Aeson
-import Data.Text
+import Data.Monoid
+import Data.Text (Text)
+import qualified Data.Text as T
 import Network.Wai.Handler.Warp (Port)
 import System.Process (ProcessHandle)
 import System.IO (Handle)
@@ -29,4 +31,14 @@ instance ToJSON CoqtopInfo where
     toJSON info = object
         [ "id" .= infoCoqtopId info
         , "message" .= infoCoqtopOutput info
+        ]
+
+data ServerError = NoSuchCoqtopError
+    { errorCoqtopId :: Int
+    }
+
+instance ToJSON ServerError where
+    toJSON (NoSuchCoqtopError i) = object
+        [ "id" .= (0 :: Int)
+        , "message" .= ("No such coqtop id: " <> T.pack (show i))
         ]

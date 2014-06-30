@@ -29,6 +29,13 @@ startCoqtop = do
             }
     return (coqtop, E.decodeUtf8 o)
 
+terminateCoqtop :: Coqtop -> IO ()
+terminateCoqtop coqtop = do
+    hClose $ coqtopStdin coqtop
+    hClose $ coqtopStdout coqtop
+    hClose $ coqtopStderr coqtop
+    terminateProcess $ coqtopProcessHandle coqtop
+
 hGetOutput :: Handle -> IO ByteString
 hGetOutput handle = hReady handle >>= \case
     True -> do
