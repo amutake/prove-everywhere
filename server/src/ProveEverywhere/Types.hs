@@ -1,5 +1,9 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ProveEverywhere.Types where
 
+import Data.Aeson
+import Data.Text
 import Network.Wai.Handler.Warp (Port)
 import System.Process (ProcessHandle)
 import System.IO (Handle)
@@ -15,3 +19,14 @@ data Coqtop = Coqtop
     , coqtopProcessHandle :: ProcessHandle
     , coqtopCount :: Int
     }
+
+data CoqtopInfo = CoqtopInfo
+    { infoCoqtopNumber :: Int
+    , infoCoqtopOutput :: Text
+    }
+
+instance ToJSON CoqtopInfo where
+    toJSON info = object
+        [ "number" .= infoCoqtopNumber info
+        , "message" .= infoCoqtopOutput info
+        ]

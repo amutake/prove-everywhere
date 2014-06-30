@@ -8,6 +8,7 @@ import ProveEverywhere.Server
 main :: IO ()
 main = do
     config <- execParser opts
+    putStrLn $ "Server started on port " ++ show (configPort config)
     runServer config
   where
     opts = info (helper <*> configParser) $

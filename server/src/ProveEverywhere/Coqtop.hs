@@ -3,13 +3,15 @@
 module ProveEverywhere.Coqtop where
 
 import Data.ByteString (ByteString, hGet)
+import Data.Text
+import qualified Data.Text.Encoding as E
 import Data.Monoid
 import System.Process
 import System.IO
 
 import ProveEverywhere.Types
 
-startCoqtop :: IO (Coqtop, ByteString)
+startCoqtop :: IO (Coqtop, Text)
 startCoqtop = do
     let cmd = (shell "coqtop -emacs")
             { std_in = CreatePipe
@@ -25,7 +27,7 @@ startCoqtop = do
             , coqtopProcessHandle = ph
             , coqtopCount = 1
             }
-    return (coqtop, o)
+    return (coqtop, E.decodeUtf8 o)
 
 hGetOutput :: Handle -> IO ByteString
 hGetOutput handle = hReady handle >>= \case

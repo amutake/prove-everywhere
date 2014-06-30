@@ -3,7 +3,7 @@
 module ProveEverywhere.Server where
 
 import Control.Concurrent.MVar
-import Data.ByteString.Lazy (fromStrict)
+import Data.Aeson
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import Network.HTTP.Types.Status (status200, status404)
@@ -22,9 +22,8 @@ runServer config = do
     run (configPort config) (server coqtopMap seed)
 
 server :: MVar CoqtopMap -> MVar Int -> Application
-server coqtopMap seed req respond = do
-    let path = pathInfo req
-    case path of
+server coqtopMap seed req respond =
+    case pathInfo req of
         ["start"] -> start
         _ -> respond $ responseLBS status404 [] ""
   where
@@ -32,7 +31,11 @@ server coqtopMap seed req respond = do
         n <- fresh seed
         (coqtop, o) <- startCoqtop
         insert coqtopMap n coqtop
-        respond $ responseLBS status200 [] $ fromStrict o
+        let res = encode CoqtopInfo
+                { infoCoqtopNumber = n
+                , infoCoqtopOutput = o
+                }
+        respond $ responseLBS status200 [] res
 
 fresh :: MVar Int -> IO Int
 fresh seed = modifyMVar seed (\n -> return (n + 1, n))
