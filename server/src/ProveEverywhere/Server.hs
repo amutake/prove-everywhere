@@ -32,7 +32,7 @@ server coqtopMap seed req respond =
         (coqtop, o) <- startCoqtop
         insert coqtopMap n coqtop
         let res = encode CoqtopInfo
-                { infoCoqtopNumber = n
+                { infoCoqtopId = n
                 , infoCoqtopOutput = o
                 }
         respond $ responseLBS status200 [] res

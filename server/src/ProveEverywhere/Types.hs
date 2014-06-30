@@ -21,12 +21,12 @@ data Coqtop = Coqtop
     }
 
 data CoqtopInfo = CoqtopInfo
-    { infoCoqtopNumber :: Int
+    { infoCoqtopId :: Int
     , infoCoqtopOutput :: Text
     }
 
 instance ToJSON CoqtopInfo where
     toJSON info = object
-        [ "number" .= infoCoqtopNumber info
+        [ "id" .= infoCoqtopId info
         , "message" .= infoCoqtopOutput info
         ]
