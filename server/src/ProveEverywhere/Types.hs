@@ -38,42 +38,46 @@ instance ToJSON CoqtopInfo where
         ]
 
 data ServerError
-    = NoSuchCoqtopError
-        { errorCoqtopId :: Int
-        }
-    | PromptParseError
-        { errorParseError :: ParseError
-        }
-    | CannotParseRequestError
-        { errorRequest :: ByteString
-        }
-    | CommandError
-        { errorCommandMessage :: Text
-        }
+    = NoSuchCoqtopError Int
+    | PromptParseError ParseError
+    | RequestParseError ByteString
+    | CommandError Text
+    | NoSuchApiError [Text]
 
 instance ToJSON ServerError where
     toJSON (NoSuchCoqtopError i) = object
         [ "error" .= object
             [ "id" .= (0 :: Int)
+            , "type" .= ("NoSuchCoqtopError" :: Text)
             , "message" .= ("No such coqtop id: " <> T.pack (show i))
             ]
         ]
     toJSON (PromptParseError e) = object
         [ "error" .= object
             [ "id" .= (1 :: Int)
+            , "type" .= ("PromptParseError" :: Text)
             , "message" .= T.pack (show e)
             ]
         ]
-    toJSON (CannotParseRequestError t) = object
+    toJSON (RequestParseError t) = object
         [ "error" .= object
             [ "id" .= (2 :: Int)
-            , "message" .= ("Cannot parse request: " <> E.decodeUtf8 t)
+            , "type" .= ("RequestParseError" :: Text)
+            , "message" .= (E.decodeUtf8 t)
             ]
         ]
     toJSON (CommandError e) = object
         [ "error" .= object
             [ "id" .= (3 :: Int)
+            , "type" .= ("CommandError" :: Text)
             , "message" .= e
+            ]
+        ]
+    toJSON (NoSuchApiError ps) = object
+        [ "error" .= object
+            [ "id" .= (4 :: Int)
+            , "type" .= ("NoSuchApiError" :: Text)
+            , "message" .= T.intercalate "/" ps
             ]
         ]
 

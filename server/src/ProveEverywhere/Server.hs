@@ -29,7 +29,9 @@ server coqtopMap seed req respond =
         ["start"] -> start
         ["command", n] -> command $ read $ T.unpack n
         ["terminate", n] -> terminate $ read $ T.unpack n
-        _ -> respond $ responseLBS status404 [] ""
+        paths -> do
+            let res = NoSuchApiError paths
+            respond $ responseJSON status404 res
   where
     start = do
         n <- fresh seed
@@ -42,40 +44,22 @@ server coqtopMap seed req respond =
         respond res
 
     command n = do
-        lookup coqtopMap n >>= \case
-            Nothing -> do
-                let res = NoSuchCoqtopError
-                        { errorCoqtopId = n
+        res <- withCoqtop coqtopMap n $ \coqtop -> do
+            withDecodedBody req $ \cmd -> do
+                handleError (commandCoqtop coqtop cmd) $ \(coqtop', o) -> do
+                    update coqtopMap n coqtop'
+                    return $ responseJSON status200 CoqtopInfo
+                        { infoCoqtopId = n
+                        , infoCoqtopOutput = o
                         }
-                respond $ responseJSON status404 res
-            Just coqtop -> do
-                body <- requestBody req
-                case decodeStrict body of
-                    Nothing -> do
-                        let res = CannotParseRequestError
-                                { errorRequest = body
-                                }
-                        respond $ responseJSON status400 res
-                    Just cmd -> do
-                        res <- handleError (commandCoqtop coqtop cmd) $ \(coqtop', o) -> do
-                            update coqtopMap n coqtop'
-                            return $ responseJSON status200 CoqtopInfo
-                                { infoCoqtopId = n
-                                , infoCoqtopOutput = o
-                                }
-                        respond res
+        respond res
 
     terminate n = do
-        lookup coqtopMap n >>= \case
-            Nothing -> do
-                let res = NoSuchCoqtopError
-                        { errorCoqtopId = n
-                        }
-                respond $ responseJSON status404 res
-            Just coqtop -> do
-                terminateCoqtop coqtop
-                delete coqtopMap n
-                respond $ responseLBS status200 [] "ok"
+        res <- withCoqtop coqtopMap n $ \coqtop -> do
+            terminateCoqtop coqtop
+            delete coqtopMap n
+            return $ responseLBS status200 [] "ok"
+        respond res
 
 fresh :: MVar Int -> IO Int
 fresh seed = modifyMVar seed (\n -> return (n + 1, n))
@@ -96,7 +80,21 @@ responseJSON :: ToJSON a => Status -> a -> Response
 responseJSON status a =
     responseLBS status [(hContentType, "application/json")] (encode a)
 
+withCoqtop :: MVar CoqtopMap -> Int -> (Coqtop -> IO Response) -> IO Response
+withCoqtop coqtopMap n cont = do
+    result <- lookup coqtopMap n
+    maybe
+        (return $ responseJSON status404 $ NoSuchCoqtopError n)
+        cont
+        result
+
 handleError :: IO (Either ServerError a) -> (a -> IO Response) -> IO Response
-handleError io cont = io >>= \case
-    Left e -> return $ responseJSON status500 e
-    Right a -> cont a
+handleError io cont = io >>= either (return . responseJSON status500) cont
+
+withDecodedBody :: FromJSON a => Request -> (a -> IO Response) -> IO Response
+withDecodedBody req cont = do
+    body <- requestBody req
+    maybe
+        (return $ responseJSON status400 $ RequestParseError body)
+        cont
+        (decodeStrict body)
