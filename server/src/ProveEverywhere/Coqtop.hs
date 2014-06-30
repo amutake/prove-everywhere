@@ -3,7 +3,8 @@
 module ProveEverywhere.Coqtop where
 
 import Control.Applicative ((<$>))
-import Data.ByteString (ByteString, hGet)
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Char8 as B
 import Data.Text
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
@@ -29,9 +30,24 @@ startCoqtop = do
                 , coqtopStdout = out
                 , coqtopStderr = err
                 , coqtopProcessHandle = ph
-                , coqtopCount = promptStateNumber p
+                , coqtopStateNumber = promptStateNumber p
                 }
         (coqtop, o)
+
+commandCoqtop :: Coqtop -> Command -> IO (Either ServerError (Coqtop, Text))
+commandCoqtop coqtop (Command t) = do
+    let inp = coqtopStdin coqtop
+    let out = coqtopStdout coqtop
+    let err = coqtopStderr coqtop
+    B.hPutStrLn inp (E.encodeUtf8 t)
+    hFlush inp
+    hGetOutputPair (out, err) >>= \case
+        Left e -> return (Left e)
+        Right (o, p) -> do
+            let state = promptStateNumber p
+            if state == coqtopStateNumber coqtop
+                then return $ Left $ CommandError o
+                else return $ Right (coqtop { coqtopStateNumber = state }, o)
 
 terminateCoqtop :: Coqtop -> IO ()
 terminateCoqtop coqtop = do
@@ -43,7 +59,7 @@ terminateCoqtop coqtop = do
 hGetOutput :: Handle -> IO ByteString
 hGetOutput handle = hReady handle >>= \case
     True -> do
-        h <- hGet handle 1
+        h <- B.hGet handle 1
         t <- hGetOutput handle
         return (h <> t)
     False -> return mempty
