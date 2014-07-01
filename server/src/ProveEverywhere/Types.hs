@@ -45,6 +45,7 @@ data ServerError
     | RequestParseError ByteString
     | CommandError Text
     | NoSuchApiError [Text]
+    | UnknownError Text
     deriving (Show)
 
 instance ToJSON ServerError where
@@ -81,6 +82,13 @@ instance ToJSON ServerError where
             [ "id" .= (4 :: Int)
             , "type" .= ("NoSuchApiError" :: Text)
             , "message" .= T.intercalate "/" ps
+            ]
+        ]
+    toJSON (UnknownError t) = object
+        [ "error" .= object
+            [ "id" .= (5 :: Int)
+            , "type" .= ("UnknownError" :: Text)
+            , "message" .= t
             ]
         ]
 

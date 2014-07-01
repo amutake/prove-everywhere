@@ -4,6 +4,7 @@ module ProveEverywhere.Server where
 
 import Prelude hiding (lookup)
 import Control.Concurrent.MVar
+import Control.Exception
 import Control.Monad ((<=<))
 import Data.Aeson
 import Data.HashMap.Strict (HashMap)
@@ -28,7 +29,7 @@ runServer config = do
     run (configPort config) (server coqtopMap seed)
 
 server :: MVar CoqtopMap -> MVar Int -> Application
-server coqtopMap seed req respond =
+server coqtopMap seed req respond = handle unknownError $
     case pathInfo req of
         ["start"] -> start
         ["command", n] | isNatural n -> command $ read $ T.unpack n
@@ -44,6 +45,9 @@ server coqtopMap seed req respond =
             , infoCoqtopOutput = o
             , infoCoqtopState = coqtopState coqtop
             }
+
+    unknownError :: SomeException -> IO ResponseReceived
+    unknownError = respond . errorResponse . UnknownError . T.pack . show
 
     start = do
         n <- fresh seed
@@ -96,6 +100,7 @@ errorResponse e@(PromptParseError _) = responseJSON status500 e
 errorResponse e@(RequestParseError _) = responseJSON status400 e
 errorResponse e@(CommandError _) = responseJSON status400 e
 errorResponse e@(NoSuchApiError _) = responseJSON status404 e
+errorResponse e@(UnknownError _) = responseJSON status500 e
 
 withDecodedBody :: FromJSON a => Request -> (a -> IO Response) -> IO Response
 withDecodedBody req cont = do
