@@ -19,31 +19,52 @@ data Config = Config
     } deriving (Eq, Show)
 
 data Coqtop = Coqtop
-    { coqtopStdin :: Handle
+    { coqtopId :: Int
+    , coqtopStdin :: Handle
     , coqtopStdout :: Handle
     , coqtopStderr :: Handle
     , coqtopProcessHandle :: ProcessHandle
     , coqtopState :: CoqtopState
     }
 
-data CoqtopInfo = CoqtopInfo
-    { infoCoqtopId :: Int
-    , infoCoqtopOutput :: Text
-    , infoCoqtopState :: CoqtopState
+data InitialInfo = InitialInfo
+    { initialInfoId :: Int -- ^ coqtop id
+    , initialInfoOutput :: Text -- ^ coqtop initial output
+    , initialInfoState :: CoqtopState -- ^ initial state
     } deriving (Eq, Show)
 
-instance ToJSON CoqtopInfo where
+instance ToJSON InitialInfo where
     toJSON info = object
-        [ "id" .= infoCoqtopId info
-        , "output" .= infoCoqtopOutput info
-        , "state" .= toJSON (infoCoqtopState info)
+        [ "id" .= initialInfoId info
+        , "output" .= initialInfoOutput info
+        , "state" .= toJSON (initialInfoState info)
+        ]
+
+-- | The data type of output of coqtop.
+-- done + remain == length (sent_commands)
+data CoqtopOutput = CoqtopOutput
+    { coqtopOutputId :: Int -- ^ coqtop id
+    , coqtopOutputSucceeded :: Int -- ^ the number of succeeded commands
+    , coqtopOutputRemaining :: Int -- ^ the number of remaining commands
+    , coqtopOutputLast :: Output -- ^ last output (except error)
+    , coqtopOutputError :: Maybe Output -- ^ error output
+    , coqtopOutputState :: CoqtopState -- ^ last state
+    }
+
+instance ToJSON CoqtopOutput where
+    toJSON output = object
+        [ "id" .= coqtopOutputId output
+        , "succeeded" .= coqtopOutputSucceeded output
+        , "remaining" .= coqtopOutputRemaining output
+        , "last_output" .= coqtopOutputLast output
+        , "error_output" .= coqtopOutputError output
+        , "state" .= coqtopOutputState output
         ]
 
 data ServerError
     = NoSuchCoqtopError Int
     | PromptParseError ParseError
     | RequestParseError ByteString
-    | CommandError Text
     | NoSuchApiError [Text]
     | UnknownError Text
     deriving (Show)
@@ -70,23 +91,16 @@ instance ToJSON ServerError where
             , "message" .= (E.decodeUtf8 t)
             ]
         ]
-    toJSON (CommandError e) = object
-        [ "error" .= object
-            [ "id" .= (3 :: Int)
-            , "type" .= ("CommandError" :: Text)
-            , "message" .= e
-            ]
-        ]
     toJSON (NoSuchApiError ps) = object
         [ "error" .= object
-            [ "id" .= (4 :: Int)
+            [ "id" .= (3 :: Int)
             , "type" .= ("NoSuchApiError" :: Text)
             , "message" .= T.intercalate "/" ps
             ]
         ]
     toJSON (UnknownError t) = object
         [ "error" .= object
-            [ "id" .= (5 :: Int)
+            [ "id" .= (4 :: Int)
             , "type" .= ("UnknownError" :: Text)
             , "message" .= t
             ]
@@ -113,3 +127,24 @@ instance FromJSON Command where
     parseJSON (Object v) = Command <$>
         v .: "command"
     parseJSON _ = mempty
+
+data Output = Output
+    { outputType :: OutputType
+    , outputText :: Text
+    } deriving (Eq, Show)
+
+instance ToJSON Output where
+    toJSON output = object
+        [ "type" .= outputType output
+        , "output" .= outputText output
+        ]
+
+data OutputType = ErrorOutput
+                | InfoOutput
+                | ProofOutput
+                deriving (Eq, Show)
+
+instance ToJSON OutputType where
+    toJSON ErrorOutput = String "error"
+    toJSON InfoOutput = String "info"
+    toJSON ProofOutput = String "proof"

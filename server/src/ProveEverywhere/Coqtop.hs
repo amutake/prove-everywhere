@@ -1,9 +1,11 @@
+{-# LANGUAGE OverloadedStrings #-}
+
 module ProveEverywhere.Coqtop where
 
 import Control.Applicative ((<$>))
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Char8 as B
-import Data.Text
+import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
 import Data.Monoid
@@ -13,8 +15,8 @@ import System.IO
 import ProveEverywhere.Types
 import ProveEverywhere.Parser
 
-startCoqtop :: IO (Either ServerError (Coqtop, Text))
-startCoqtop = do
+startCoqtop :: Int -> IO (Either ServerError (Coqtop, Text))
+startCoqtop n = do
     let cmd = (shell "coqtop -emacs")
             { std_in = CreatePipe
             , std_out = CreatePipe
@@ -24,7 +26,8 @@ startCoqtop = do
     result <- hGetOutputPair (out, err)
     return $ flip fmap result $ \(o, p) -> do
         let coqtop = Coqtop
-                { coqtopStdin = inp
+                { coqtopId = n
+                , coqtopStdin = inp
                 , coqtopStdout = out
                 , coqtopStderr = err
                 , coqtopProcessHandle = ph
@@ -32,18 +35,73 @@ startCoqtop = do
                 }
         (coqtop, o)
 
-commandCoqtop :: Coqtop -> Command -> IO (Either ServerError (Coqtop, Text))
-commandCoqtop coqtop (Command t) = do
-    let inp = coqtopStdin coqtop
-    let out = coqtopStdout coqtop
-    let err = coqtopStderr coqtop
+commandCoqtop :: Coqtop -> Command -> IO (Either ServerError (Coqtop, CoqtopOutput))
+commandCoqtop coqtop (Command cmd) = loop 0 Nothing (coqtopState coqtop) $ splitCommands cmd
+  where
+    splitCommands t = map (`T.snoc` '.') (init ts) ++ [last ts]
+      where
+        ts = T.splitOn ". " . T.replace "\n" " " . T.strip $ t
+    loop acc lastOut lastState [] = do
+        let Just lastOut' = lastOut -- TODO
+        let coqOut = CoqtopOutput
+                { coqtopOutputId = coqtopId coqtop
+                , coqtopOutputSucceeded = acc
+                , coqtopOutputRemaining = 0
+                , coqtopOutputLast = lastOut'
+                , coqtopOutputError = Nothing
+                , coqtopOutputState = lastState
+                }
+        return $ Right (coqtop { coqtopState = lastState }, coqOut)
+    loop acc lastOut lastState (t:ts) = do
+        result <- putAndGet coqtop t
+        case result of
+            Left err -> return $ Left err
+            Right (state, output) -> do
+                if outputType output == ErrorOutput
+                    then do
+                        let Just lastOut' = lastOut -- TODO
+                        let coqOut = CoqtopOutput
+                                { coqtopOutputId = coqtopId coqtop
+                                , coqtopOutputSucceeded = acc
+                                , coqtopOutputRemaining = length (t:ts)
+                                , coqtopOutputLast = lastOut'
+                                , coqtopOutputError = Just output
+                                , coqtopOutputState = lastState
+                                }
+                        return $ Right (coqtop { coqtopState = lastState }, coqOut)
+                    else loop (acc + 1) (Just output) state ts
+
+putAndGet :: Coqtop -> Text -> IO (Either ServerError (CoqtopState, Output))
+putAndGet coqtop t = do
     B.hPutStrLn inp (E.encodeUtf8 t)
     hFlush inp
     result <- hGetOutputPair (out, err)
-    return $ result >>= \(o, p) -> do
-        if p == coqtopState coqtop
-            then Left $ CommandError o
-            else Right (coqtop { coqtopState = p }, o)
+    return $ flip fmap result $ \(o, after) ->
+        (after, mkOutput before after o)
+  where
+    inp = coqtopStdin coqtop
+    out = coqtopStdout coqtop
+    err = coqtopStderr coqtop
+    before = coqtopState coqtop
+
+mkOutput :: CoqtopState -- ^ before
+         -> CoqtopState -- ^ after
+         -> Text -- ^ raw output
+         -> Output -- ^ output with output type
+mkOutput before after output
+    | before == after = Output
+        { outputType = ErrorOutput
+        , outputText = output
+        }
+    | promptTheoremStateNumber before /=
+      promptTheoremStateNumber after = Output
+        { outputType = ProofOutput
+        , outputText = output
+        }
+    | otherwise = Output
+        { outputType = InfoOutput
+        , outputText = output
+        }
 
 terminateCoqtop :: Coqtop -> IO ()
 terminateCoqtop coqtop = do

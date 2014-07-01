@@ -36,28 +36,33 @@ server coqtopMap seed req respond = handle unknownError $
         ["terminate", n] | isNatural n -> terminate $ read $ T.unpack n
         paths -> do
             let res = NoSuchApiError paths
-            respond $ responseJSON status404 res
+            respond $ errorResponse res
   where
-    successResponse n (coqtop, o) = do
+    initialResponse (coqtop, o) = do
+        let n = coqtopId coqtop
         insert coqtopMap n coqtop
-        return $ responseJSON status200 CoqtopInfo
-            { infoCoqtopId = n
-            , infoCoqtopOutput = o
-            , infoCoqtopState = coqtopState coqtop
+        return $ responseJSON status200 InitialInfo
+            { initialInfoId = n
+            , initialInfoOutput = o
+            , initialInfoState = coqtopState coqtop
             }
+
+    commandResponse (coqtop, output) = do
+        insert coqtopMap (coqtopId coqtop) coqtop
+        return $ responseJSON status200 output
 
     unknownError :: SomeException -> IO ResponseReceived
     unknownError = respond . errorResponse . UnknownError . T.pack . show
 
     start = do
         n <- fresh seed
-        res <- handleError startCoqtop $ successResponse n
+        res <- handleError (startCoqtop n) initialResponse
         respond res
 
     command n = do
         res <- withCoqtop coqtopMap n $ \coqtop -> do
             withDecodedBody req $ \cmd -> do
-                handleError (commandCoqtop coqtop cmd) $ successResponse n
+                handleError (commandCoqtop coqtop cmd) commandResponse
         respond res
 
     terminate n = do
@@ -98,7 +103,6 @@ errorResponse :: ServerError -> Response
 errorResponse e@(NoSuchCoqtopError _) = responseJSON status404 e
 errorResponse e@(PromptParseError _) = responseJSON status500 e
 errorResponse e@(RequestParseError _) = responseJSON status400 e
-errorResponse e@(CommandError _) = responseJSON status400 e
 errorResponse e@(NoSuchApiError _) = responseJSON status404 e
 errorResponse e@(UnknownError _) = responseJSON status500 e
 
