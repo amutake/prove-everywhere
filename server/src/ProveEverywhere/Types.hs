@@ -46,7 +46,7 @@ data CoqtopOutput = CoqtopOutput
     { coqtopOutputId :: Int -- ^ coqtop id
     , coqtopOutputSucceeded :: Int -- ^ the number of succeeded commands
     , coqtopOutputRemaining :: Int -- ^ the number of remaining commands
-    , coqtopOutputLast :: Output -- ^ last output (except error)
+    , coqtopOutputLast :: Maybe Output -- ^ last output (except error)
     , coqtopOutputError :: Maybe Output -- ^ error output
     , coqtopOutputState :: CoqtopState -- ^ last state
     }

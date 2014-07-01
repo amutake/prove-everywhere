@@ -36,40 +36,38 @@ startCoqtop n = do
         (coqtop, o)
 
 commandCoqtop :: Coqtop -> Command -> IO (Either ServerError (Coqtop, CoqtopOutput))
-commandCoqtop coqtop (Command cmd) = loop 0 Nothing (coqtopState coqtop) $ splitCommands cmd
+commandCoqtop coqtop (Command cmd) = loop coqtop 0 Nothing $ splitCommands cmd
   where
     splitCommands t = map (`T.snoc` '.') (init ts) ++ [last ts]
       where
         ts = T.splitOn ". " . T.replace "\n" " " . T.strip $ t
-    loop acc lastOut lastState [] = do
-        let Just lastOut' = lastOut -- TODO
+    loop coqtop' acc lastOut [] = do
         let coqOut = CoqtopOutput
-                { coqtopOutputId = coqtopId coqtop
+                { coqtopOutputId = coqtopId coqtop'
                 , coqtopOutputSucceeded = acc
                 , coqtopOutputRemaining = 0
-                , coqtopOutputLast = lastOut'
+                , coqtopOutputLast = lastOut
                 , coqtopOutputError = Nothing
-                , coqtopOutputState = lastState
+                , coqtopOutputState = coqtopState coqtop'
                 }
-        return $ Right (coqtop { coqtopState = lastState }, coqOut)
-    loop acc lastOut lastState (t:ts) = do
-        result <- putAndGet coqtop t
+        return $ Right (coqtop', coqOut)
+    loop coqtop' acc lastOut (t:ts) = do
+        result <- putAndGet coqtop' t
         case result of
             Left err -> return $ Left err
             Right (state, output) -> do
                 if outputType output == ErrorOutput
                     then do
-                        let Just lastOut' = lastOut -- TODO
                         let coqOut = CoqtopOutput
                                 { coqtopOutputId = coqtopId coqtop
                                 , coqtopOutputSucceeded = acc
                                 , coqtopOutputRemaining = length (t:ts)
-                                , coqtopOutputLast = lastOut'
+                                , coqtopOutputLast = lastOut
                                 , coqtopOutputError = Just output
-                                , coqtopOutputState = lastState
+                                , coqtopOutputState = coqtopState coqtop'
                                 }
-                        return $ Right (coqtop { coqtopState = lastState }, coqOut)
-                    else loop (acc + 1) (Just output) state ts
+                        return $ Right (coqtop', coqOut)
+                    else loop (coqtop' { coqtopState = state }) (acc + 1) (Just output) ts
 
 putAndGet :: Coqtop -> Text -> IO (Either ServerError (CoqtopState, Output))
 putAndGet coqtop t = do
