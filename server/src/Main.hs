@@ -13,9 +13,14 @@ main = do
     result <- getCoqtopVersion
     case result of
         Nothing -> putStrLn "coqtop not found"
+        Just (n, m, p) | (n, m, p) < (8, 4, 0) -> do
+            putStrLn $ concat
+                [ "coqtop (" ++ show n ++ "." ++ show m ++ "pl" ++ show p ++ ") found\n"
+                , "but this server does not support this version"
+                ]
         Just (n, m, p) -> do
             putStrLn $ "coqtop (" ++ show n ++ "." ++ show m ++ "pl" ++ show p ++ ") found"
-            putStrLn $ "Starting server on port " ++ show (configPort config)
+            putStrLn $ "Server started on port " ++ show (configPort config)
             runServer config
   where
     opts = info (helper <*> configParser) $
