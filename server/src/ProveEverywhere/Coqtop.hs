@@ -12,6 +12,7 @@ import Data.Monoid
 import System.Process
 import System.IO
 
+import ProveEverywhere.Util
 import ProveEverywhere.Types
 import ProveEverywhere.Parser
 
@@ -38,9 +39,11 @@ startCoqtop n = do
 commandCoqtop :: Coqtop -> Command -> IO (Either ServerError (Coqtop, CoqtopOutput))
 commandCoqtop coqtop (Command cmd) = loop coqtop 0 Nothing $ splitCommands cmd
   where
-    splitCommands t = map (`T.snoc` '.') (init ts) ++ [last ts]
-      where
-        ts = T.splitOn ". " . T.replace "\n" " " . T.strip $ t
+    loop :: Coqtop -- ^ coqtop with last state
+         -> Int -- ^ accumulator of the number of succeeded commands
+         -> Maybe Output -- ^ last output
+         -> [Text] -- ^ remaining commands
+         -> IO (Either ServerError (Coqtop, CoqtopOutput))
     loop coqtop' acc lastOut [] = do
         let coqOut = CoqtopOutput
                 { coqtopOutputId = coqtopId coqtop'
@@ -59,7 +62,7 @@ commandCoqtop coqtop (Command cmd) = loop coqtop 0 Nothing $ splitCommands cmd
                 if outputType output == ErrorOutput
                     then do
                         let coqOut = CoqtopOutput
-                                { coqtopOutputId = coqtopId coqtop
+                                { coqtopOutputId = coqtopId coqtop'
                                 , coqtopOutputSucceeded = acc
                                 , coqtopOutputRemaining = length (t:ts)
                                 , coqtopOutputLast = lastOut

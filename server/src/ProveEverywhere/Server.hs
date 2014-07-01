@@ -5,18 +5,15 @@ module ProveEverywhere.Server where
 import Prelude hiding (lookup)
 import Control.Concurrent.MVar
 import Control.Exception
-import Control.Monad ((<=<))
 import Data.Aeson
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
-import Data.Maybe (isJust)
-import Data.Text (Text)
 import qualified Data.Text as T
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
-import Safe
 
+import ProveEverywhere.Util
 import ProveEverywhere.Types
 import ProveEverywhere.Coqtop
 
@@ -113,10 +110,3 @@ withDecodedBody req cont = do
         (return $ errorResponse $ RequestParseError body)
         cont
         (decodeStrict body)
-
-isNatural :: Text -> Bool
-isNatural = isJust . (nat <=< readMay . T.unpack)
-  where
-    nat :: Int -> Maybe Int
-    nat n | n >= 0 = Just n
-          | otherwise = Nothing
