@@ -30,7 +30,7 @@ startCoqtop = do
                 , coqtopStdout = out
                 , coqtopStderr = err
                 , coqtopProcessHandle = ph
-                , coqtopStateNumber = promptStateNumber p
+                , coqtopState = p
                 }
         (coqtop, o)
 
@@ -44,10 +44,9 @@ commandCoqtop coqtop (Command t) = do
     hGetOutputPair (out, err) >>= \case
         Left e -> return (Left e)
         Right (o, p) -> do
-            let state = promptStateNumber p
-            if state == coqtopStateNumber coqtop
+            if p == coqtopState coqtop
                 then return $ Left $ CommandError o
-                else return $ Right (coqtop { coqtopStateNumber = state }, o)
+                else return $ Right (coqtop { coqtopState = p }, o)
 
 terminateCoqtop :: Coqtop -> IO ()
 terminateCoqtop coqtop = do
@@ -64,7 +63,7 @@ hGetOutput handle = hReady handle >>= \case
         return (h <> t)
     False -> return mempty
 
-hGetOutputPair :: (Handle, Handle) -> IO (Either ServerError (Text, Prompt))
+hGetOutputPair :: (Handle, Handle) -> IO (Either ServerError (Text, CoqtopState))
 hGetOutputPair (out, err) = do
     hWait err
     p <- T.strip . E.decodeUtf8 <$> hGetOutput err

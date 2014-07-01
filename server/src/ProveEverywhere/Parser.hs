@@ -11,13 +11,13 @@ import Text.Parsec.Text (Parser)
 
 import ProveEverywhere.Types
 
-parsePrompt :: Text -> Either ParseError Prompt
+parsePrompt :: Text -> Either ParseError CoqtopState
 parsePrompt = parse prompt "prompt"
 
-prompt :: Parser Prompt
+prompt :: Parser CoqtopState
 prompt = between (symbol "<prompt>") (symbol "</prompt>") internal
 
-internal :: Parser Prompt
+internal :: Parser CoqtopState
 internal = do
     current <- theorem
     _ <- symbol "<"
@@ -26,9 +26,9 @@ internal = do
         sepBy theorem (symbol "|")
     theoremState <- natural
     _ <- symbol "<"
-    return Prompt
+    return CoqtopState
         { promptCurrentTheorem = current
-        , promptStateNumber = wholeState
+        , promptWholeStateNumber = wholeState
         , promptTheoremStack = stack
         , promptTheoremStateNumber = theoremState
         }

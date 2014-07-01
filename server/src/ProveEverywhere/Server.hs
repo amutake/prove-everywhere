@@ -33,25 +33,23 @@ server coqtopMap seed req respond =
             let res = NoSuchApiError paths
             respond $ responseJSON status404 res
   where
+    successResponse n (coqtop, o) = do
+        insert coqtopMap n coqtop
+        return $ responseJSON status200 CoqtopInfo
+            { infoCoqtopId = n
+            , infoCoqtopOutput = o
+            , infoCoqtopState = coqtopState coqtop
+            }
+
     start = do
         n <- fresh seed
-        res <- handleError startCoqtop $ \(coqtop, o) -> do
-            insert coqtopMap n coqtop
-            return $ responseJSON status200 CoqtopInfo
-                { infoCoqtopId = n
-                , infoCoqtopOutput = o
-                }
+        res <- handleError startCoqtop $ successResponse n
         respond res
 
     command n = do
         res <- withCoqtop coqtopMap n $ \coqtop -> do
             withDecodedBody req $ \cmd -> do
-                handleError (commandCoqtop coqtop cmd) $ \(coqtop', o) -> do
-                    update coqtopMap n coqtop'
-                    return $ responseJSON status200 CoqtopInfo
-                        { infoCoqtopId = n
-                        , infoCoqtopOutput = o
-                        }
+                handleError (commandCoqtop coqtop cmd) $ successResponse n
         respond res
 
     terminate n = do
@@ -72,9 +70,6 @@ lookup coqtopMap n = withMVar coqtopMap $ return . HM.lookup n
 
 delete :: MVar CoqtopMap -> Int -> IO ()
 delete coqtopMap n = modifyMVar_ coqtopMap (return . HM.delete n)
-
-update :: MVar CoqtopMap -> Int -> Coqtop -> IO ()
-update = insert
 
 responseJSON :: ToJSON a => Status -> a -> Response
 responseJSON status a =

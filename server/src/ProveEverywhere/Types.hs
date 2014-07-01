@@ -23,18 +23,20 @@ data Coqtop = Coqtop
     , coqtopStdout :: Handle
     , coqtopStderr :: Handle
     , coqtopProcessHandle :: ProcessHandle
-    , coqtopStateNumber :: Integer
+    , coqtopState :: CoqtopState
     }
 
 data CoqtopInfo = CoqtopInfo
     { infoCoqtopId :: Int
     , infoCoqtopOutput :: Text
-    }
+    , infoCoqtopState :: CoqtopState
+    } deriving (Eq, Show)
 
 instance ToJSON CoqtopInfo where
     toJSON info = object
         [ "id" .= infoCoqtopId info
-        , "message" .= infoCoqtopOutput info
+        , "output" .= infoCoqtopOutput info
+        , "state" .= toJSON (infoCoqtopState info)
         ]
 
 data ServerError
@@ -43,6 +45,7 @@ data ServerError
     | RequestParseError ByteString
     | CommandError Text
     | NoSuchApiError [Text]
+    deriving (Show)
 
 instance ToJSON ServerError where
     toJSON (NoSuchCoqtopError i) = object
@@ -81,14 +84,22 @@ instance ToJSON ServerError where
             ]
         ]
 
-data Prompt = Prompt
+data CoqtopState = CoqtopState
     { promptCurrentTheorem :: Text
-    , promptStateNumber :: Integer
+    , promptWholeStateNumber :: Integer
     , promptTheoremStack :: [Text]
     , promptTheoremStateNumber :: Integer
-    }
+    } deriving (Eq, Show)
 
-data Command = Command Text
+instance ToJSON CoqtopState where
+    toJSON prompt = object
+        [ "current_theorem" .= promptCurrentTheorem prompt
+        , "whole_state_number" .= promptWholeStateNumber prompt
+        , "theorem_stack" .= promptTheoremStack prompt
+        , "theorem_state_number" .= promptTheoremStateNumber prompt
+        ]
+
+data Command = Command Text deriving (Eq, Show)
 
 instance FromJSON Command where
     parseJSON (Object v) = Command <$>
