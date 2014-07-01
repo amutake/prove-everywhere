@@ -14,16 +14,16 @@ import ProveEverywhere.Types
 parsePrompt :: Text -> Either ParseError CoqtopState
 parsePrompt = parse prompt "prompt"
 
+-- | Prompt parser
 prompt :: Parser CoqtopState
 prompt = between (symbol "<prompt>") (symbol "</prompt>") internal
 
 internal :: Parser CoqtopState
 internal = do
-    current <- theorem
+    current <- token theorem
     _ <- symbol "<"
     wholeState <- natural
-    stack <- between (symbol "|") (symbol "|") $
-        sepBy theorem (symbol "|")
+    stack <- token theoremStack
     theoremState <- natural
     _ <- symbol "<"
     return CoqtopState
@@ -33,5 +33,13 @@ internal = do
         , promptTheoremStateNumber = theoremState
         }
 
+-- | Parser for theorem name
 theorem :: Parser Text
-theorem = token $ T.pack <$> some (letter <|> oneOf "_")
+theorem = T.pack <$> some (alphaNum <|> oneOf "_'")
+
+-- | Parses |theorem1|theorem2| ... |theoremn| and return list of theorem names
+theoremStack :: Parser [Text]
+theoremStack = between (char '|') (char '|') $ sepBy' theorem (char '|')
+  where
+    sepBy' p sep = sepBy1' p sep <|> pure []
+    sepBy1' p sep = (:) <$> p <*> many (try (sep *> p))
