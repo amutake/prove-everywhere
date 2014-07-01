@@ -1,6 +1,8 @@
 module Main where
 
+import Control.Exception
 import Options.Applicative
+import System.Process
 
 import ProveEverywhere.Types
 import ProveEverywhere.Server
@@ -8,8 +10,13 @@ import ProveEverywhere.Server
 main :: IO ()
 main = do
     config <- execParser opts
-    putStrLn $ "Server started on port " ++ show (configPort config)
-    runServer config
+    result <- getCoqtopVersion
+    case result of
+        Nothing -> putStrLn "coqtop not found"
+        Just (n, m, p) -> do
+            putStrLn $ "coqtop (" ++ show n ++ "." ++ show m ++ "pl" ++ show p ++ ") found"
+            putStrLn $ "Starting server on port " ++ show (configPort config)
+            runServer config
   where
     opts = info (helper <*> configParser) $
         fullDesc <> header "prove-everywhere-server - The server for ProveEverywhere"
@@ -17,3 +24,16 @@ main = do
 configParser :: Parser Config
 configParser = Config
     <$> option (long "port" <> short 'p' <> metavar "PORT" <> help "Specify port number")
+
+getCoqtopVersion :: IO (Maybe (Int, Int, Int)) -- e.g., (8, 4, 4) = 8.4pl4
+getCoqtopVersion = handle failure $ do
+    v_all <- readProcess "coqtop" ["-v"] ""
+    let [n_str, '.', m_str, 'p', 'l', p_str]
+            = drop (length "The Coq Proof Assistant, version ")
+            . take (length "The Coq Proof Assistant, version *.*pl*")
+            $ v_all
+    let (n, m, p) = (read [n_str], read [m_str], read [p_str])
+    return (Just (n, m, p))
+  where
+    failure :: IOError -> IO (Maybe (Int, Int, Int))
+    failure _ = return Nothing
