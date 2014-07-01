@@ -4,13 +4,17 @@ module ProveEverywhere.Server where
 
 import Prelude hiding (lookup)
 import Control.Concurrent.MVar
+import Control.Monad ((<=<))
 import Data.Aeson
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
+import Data.Maybe (isJust)
+import Data.Text (Text)
 import qualified Data.Text as T
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
+import Safe
 
 import ProveEverywhere.Types
 import ProveEverywhere.Coqtop
@@ -27,8 +31,8 @@ server :: MVar CoqtopMap -> MVar Int -> Application
 server coqtopMap seed req respond =
     case pathInfo req of
         ["start"] -> start
-        ["command", n] -> command $ read $ T.unpack n
-        ["terminate", n] -> terminate $ read $ T.unpack n
+        ["command", n] | isNatural n -> command $ read $ T.unpack n
+        ["terminate", n] | isNatural n -> terminate $ read $ T.unpack n
         paths -> do
             let res = NoSuchApiError paths
             respond $ responseJSON status404 res
@@ -93,3 +97,10 @@ withDecodedBody req cont = do
         (return $ responseJSON status400 $ RequestParseError body)
         cont
         (decodeStrict body)
+
+isNatural :: Text -> Bool
+isNatural = isJust . (nat <=< readMay . T.unpack)
+  where
+    nat :: Int -> Maybe Int
+    nat n | n >= 0 = Just n
+          | otherwise = Nothing
