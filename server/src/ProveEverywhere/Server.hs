@@ -83,18 +83,25 @@ withCoqtop :: MVar CoqtopMap -> Int -> (Coqtop -> IO Response) -> IO Response
 withCoqtop coqtopMap n cont = do
     result <- lookup coqtopMap n
     maybe
-        (return $ responseJSON status404 $ NoSuchCoqtopError n)
+        (return $ errorResponse $ NoSuchCoqtopError n)
         cont
         result
 
 handleError :: IO (Either ServerError a) -> (a -> IO Response) -> IO Response
-handleError io cont = io >>= either (return . responseJSON status500) cont
+handleError io cont = io >>= either (return . errorResponse) cont
+
+errorResponse :: ServerError -> Response
+errorResponse e@(NoSuchCoqtopError _) = responseJSON status404 e
+errorResponse e@(PromptParseError _) = responseJSON status500 e
+errorResponse e@(RequestParseError _) = responseJSON status400 e
+errorResponse e@(CommandError _) = responseJSON status400 e
+errorResponse e@(NoSuchApiError _) = responseJSON status404 e
 
 withDecodedBody :: FromJSON a => Request -> (a -> IO Response) -> IO Response
 withDecodedBody req cont = do
     body <- requestBody req
     maybe
-        (return $ responseJSON status400 $ RequestParseError body)
+        (return $ errorResponse $ RequestParseError body)
         cont
         (decodeStrict body)
 
