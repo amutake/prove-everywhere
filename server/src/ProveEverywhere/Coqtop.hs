@@ -1,5 +1,3 @@
-{-# LANGUAGE LambdaCase #-}
-
 module ProveEverywhere.Coqtop where
 
 import Control.Applicative ((<$>))
@@ -41,12 +39,11 @@ commandCoqtop coqtop (Command t) = do
     let err = coqtopStderr coqtop
     B.hPutStrLn inp (E.encodeUtf8 t)
     hFlush inp
-    hGetOutputPair (out, err) >>= \case
-        Left e -> return (Left e)
-        Right (o, p) -> do
-            if p == coqtopState coqtop
-                then return $ Left $ CommandError o
-                else return $ Right (coqtop { coqtopState = p }, o)
+    result <- hGetOutputPair (out, err)
+    return $ result >>= \(o, p) -> do
+        if p == coqtopState coqtop
+            then Left $ CommandError o
+            else Right (coqtop { coqtopState = p }, o)
 
 terminateCoqtop :: Coqtop -> IO ()
 terminateCoqtop coqtop = do
@@ -56,12 +53,13 @@ terminateCoqtop coqtop = do
     terminateProcess $ coqtopProcessHandle coqtop
 
 hGetOutput :: Handle -> IO ByteString
-hGetOutput handle = hReady handle >>= \case
-    True -> do
+hGetOutput handle = hReady handle >>= handler
+  where
+    handler True = do
         h <- B.hGet handle 1
         t <- hGetOutput handle
         return (h <> t)
-    False -> return mempty
+    handler False = return mempty
 
 hGetOutputPair :: (Handle, Handle) -> IO (Either ServerError (Text, CoqtopState))
 hGetOutputPair (out, err) = do
@@ -73,6 +71,7 @@ hGetOutputPair (out, err) = do
         Right prompt -> return $ Right (o, prompt)
 
 hWait :: Handle -> IO ()
-hWait handle = hWaitForInput handle 100 >>= \case
-    True -> return ()
-    False -> hWait handle
+hWait handle = hWaitForInput handle 100 >>= handler
+  where
+    handler True = return ()
+    handler False = hWait handle
