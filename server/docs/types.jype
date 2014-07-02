@@ -1,0 +1,44 @@
+initial_info = {
+  id: int
+  output: string
+  state: state
+}
+
+state = {
+  current_theorem: string
+  whole_state_number: int
+  theorem_stack: array[string]
+  theorem_state_number: int
+}
+
+output = {
+  type: output_type
+  output: string
+}
+
+output_type = "error" | "info" | "proof"
+
+error = {
+  error: error_content
+}
+
+error_content = {
+  id: int
+  type: error_type
+  message: string
+}
+
+error_type = "NoSuchCoqtopError"
+           | "PromptParseError"
+           | "RequestParseError"
+           | "NoSuchApiError"
+           | "UnknownError"
+
+output_detail = {
+  id: int
+  succeeded: int
+  remaining: int
+  last_output: nullable[output]
+  error_output: nullable[output]
+  state: state
+}
