@@ -66,7 +66,7 @@ server coqtopMap seed req respond = handle unknownError $
         res <- withCoqtop coqtopMap n $ \coqtop -> do
             terminateCoqtop coqtop
             delete coqtopMap n
-            return $ responseJSON status200 ()
+            return $ responseJSON status200 EmptyObject
         respond res
 
 fresh :: MVar Int -> IO Int

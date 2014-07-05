@@ -148,3 +148,8 @@ instance ToJSON OutputType where
     toJSON ErrorOutput = String "error"
     toJSON InfoOutput = String "info"
     toJSON ProofOutput = String "proof"
+
+data EmptyObject = EmptyObject deriving (Eq, Show)
+
+instance ToJSON EmptyObject where
+    toJSON EmptyObject = object []
