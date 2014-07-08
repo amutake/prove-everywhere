@@ -25,6 +25,7 @@ startCoqtop n = do
             }
     (Just inp, Just out, Just err, ph) <- createProcess cmd
     result <- hGetOutputPair (out, err)
+    hSetEncoding err char8
     return $ flip fmap result $ \(o, p) -> do
         let coqtop = Coqtop
                 { coqtopId = n
@@ -123,11 +124,13 @@ hGetOutput handle = hReady handle >>= handler
 hGetOutputPair :: (Handle, Handle) -> IO (Either ServerError (Text, CoqtopState))
 hGetOutputPair (out, err) = do
     hWait err
-    p <- T.strip . E.decodeUtf8 <$> hGetOutput err
+    p <- T.strip . E.decodeUtf8With onError <$> hGetOutput err
     o <- T.strip . E.decodeUtf8 <$> hGetOutput out
     case parsePrompt p of
         Left perr -> return $ Left $ PromptParseError perr
         Right prompt -> return $ Right (o, prompt)
+  where
+    onError _ _ = Nothing
 
 hWait :: Handle -> IO ()
 hWait handle = hWaitForInput handle 100 >>= handler

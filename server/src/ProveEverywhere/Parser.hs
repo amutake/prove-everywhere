@@ -16,7 +16,9 @@ parsePrompt = parse prompt "prompt"
 
 -- | Prompt parser
 prompt :: Parser CoqtopState
-prompt = between (symbol "<prompt>") (symbol "</prompt>") internal
+prompt = do
+    skipMany $ noneOf "<" -- this may ignore important error messages
+    between (symbol "<prompt>") (symbol "</prompt>") internal
 
 internal :: Parser CoqtopState
 internal = do
