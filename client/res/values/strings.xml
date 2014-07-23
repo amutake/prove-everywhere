@@ -8,5 +8,4 @@
     <string name="settings_title">Settings</string>
     <string name="hostname">Hostname</string>
     <string name="port_number">Port</string>
-
 </resources>
