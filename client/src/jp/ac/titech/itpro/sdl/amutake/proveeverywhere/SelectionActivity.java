@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import android.app.Activity;
 import android.app.ActionBar;
 import android.app.Fragment;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
@@ -18,6 +19,7 @@ import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.os.Build;
+import android.preference.PreferenceFragment;
 
 public class SelectionActivity extends Activity {
 
@@ -61,6 +63,7 @@ public class SelectionActivity extends Activity {
 		int id = item.getItemId();
 		switch (id) {
 		case R.id.action_settings:
+			startActivity(new Intent(this, CoqPreferenceActivity.class));
 			return true;
 		case R.id.new_code:
 			return true;
