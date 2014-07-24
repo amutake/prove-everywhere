@@ -4,7 +4,10 @@ import java.util.ArrayList;
 
 import android.app.Activity;
 import android.app.ActionBar;
+import android.app.AlertDialog;
 import android.app.Fragment;
+import android.app.AlertDialog.Builder;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -17,6 +20,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -28,10 +32,16 @@ public class SelectionActivity extends Activity {
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+		Log.d("SelectionActivity", "onCreate");
 		setContentView(R.layout.activity_selection);
+	}
 
+	@Override
+	public void onResume() {
+		super.onResume();
+		Log.d("SelectionActivity", "onResume");
 		CoqCodeDbOpenHelper helper = new CoqCodeDbOpenHelper(this);
-		SQLiteDatabase db = helper.getWritableDatabase();
+		final SQLiteDatabase db = helper.getWritableDatabase();
 		Cursor cursor = db.query(CoqCodeColumns.TBNAME, null, null, null, null, null, CoqCodeColumns.LAST_MODIFIED_AT + " DESC");
 		ArrayList<CoqCode> codeList = new ArrayList<CoqCode>();
 		codeList.add(new CoqCode(0, "hoge.v", "Theorem hoge : forall n : nat, n + O = n."));
@@ -45,12 +55,12 @@ public class SelectionActivity extends Activity {
 		}
 
 		ListView codeListView = (ListView) findViewById(R.id.code_list);
-		final ListAdapter adapter = new ArrayAdapter<CoqCode>(this, android.R.layout.simple_list_item_1, codeList);
+		final ArrayAdapter<CoqCode> adapter = new ArrayAdapter<CoqCode>(this, android.R.layout.simple_list_item_1, codeList);
 		codeListView.setAdapter(adapter);
 		codeListView.setOnItemClickListener(new OnItemClickListener() {
 			@Override
 			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-				CoqCode selected = (CoqCode) adapter.getItem(position);
+				CoqCode selected = adapter.getItem(position);
 				Intent intent = new Intent(getApplicationContext(), EditerActivity.class);
 				intent.putExtra(Strings.codeId, selected.getId());
 				intent.putExtra(Strings.codeName, selected.getName());
@@ -58,8 +68,34 @@ public class SelectionActivity extends Activity {
 				startActivity(intent);
 			}
 		});
+		codeListView.setOnItemLongClickListener(new OnItemLongClickListener() {
+			@Override
+			public boolean onItemLongClick(AdapterView<?> parent, View view, int position, long id) {
+				final CoqCode selected = adapter.getItem(position);
+				AlertDialog.Builder adb = new AlertDialog.Builder(SelectionActivity.this);
+				adb.setTitle("Delete?");
+				adb.setMessage("Are you sure you want to delete '" + selected.getName() + "'");
+				adb.setNegativeButton("Cancel", new AlertDialog.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+					}
+				});
+				adb.setPositiveButton("OK", new AlertDialog.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						String whereClause = CoqCodeColumns._ID + " = ?";
+						String whereArgs[] = new String[1];
+						whereArgs[0] = Long.toString(selected.getId());
+						db.delete(CoqCodeColumns.TBNAME, whereClause, whereArgs);
+						adapter.remove(selected);
+						adapter.notifyDataSetChanged();
+					}
+				});
+				adb.create().show();
+				return true;
+			}
+		});
 	}
-
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
