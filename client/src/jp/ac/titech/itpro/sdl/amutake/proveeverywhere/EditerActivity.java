@@ -1,5 +1,7 @@
 package jp.ac.titech.itpro.sdl.amutake.proveeverywhere;
 
+import java.sql.Timestamp;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -9,7 +11,6 @@ import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.ContentValues;
-import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.sqlite.SQLiteDatabase;
@@ -138,10 +139,13 @@ public class EditerActivity extends Activity {
 		ContentValues values = new ContentValues();
 		values.put(CoqCodeColumns.CODE, codeArea.getText().toString());
 		values.put(CoqCodeColumns.NAME, nameArea.getText().toString());
-		Log.d(TAG, Long.toString(codeId));
+		Long ts = System.currentTimeMillis();
 		if (codeId == -1) {
+			values.put(CoqCodeColumns.CREATED_AT, new Timestamp(ts).toString());
+			values.put(CoqCodeColumns.LAST_MODIFIED_AT, new Timestamp(ts).toString());
 			db.insert(CoqCodeColumns.TBNAME, "", values);
 		} else {
+			values.put(CoqCodeColumns.LAST_MODIFIED_AT, new Timestamp(ts).toString());
 			String whereClause = CoqCodeColumns._ID + " = ?";
 			String whereArgs[] = new String[1];
 			whereArgs[0] = Long.toString(codeId);

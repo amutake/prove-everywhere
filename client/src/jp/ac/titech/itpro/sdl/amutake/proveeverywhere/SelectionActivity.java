@@ -44,7 +44,6 @@ public class SelectionActivity extends Activity {
 		final SQLiteDatabase db = helper.getWritableDatabase();
 		Cursor cursor = db.query(CoqCodeColumns.TBNAME, null, null, null, null, null, CoqCodeColumns.LAST_MODIFIED_AT + " DESC");
 		ArrayList<CoqCode> codeList = new ArrayList<CoqCode>();
-		codeList.add(new CoqCode(0, "hoge.v", "Theorem hoge : forall n : nat, n + O = n."));
 		if (cursor != null) {
 			while (cursor.moveToNext()) {
 				long id = cursor.getLong(cursor.getColumnIndex(CoqCodeColumns._ID));
