@@ -5,7 +5,7 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="top">
-    <jp.ac.titech.itpro.amutake.proveeverywhere.EditCoqCode
+    <jp.ac.titech.itpro.sdl.amutake.proveeverywhere.EditCoqCode
         android:id="@+id/code_area"
         android:labelFor="@id/code_area"
         android:layout_width="match_parent"
@@ -16,7 +16,7 @@
         android:gravity="top"
         android:scrollbars="vertical|horizontal"
         android:layout_weight="1">
-    </jp.ac.titech.itpro.amutake.proveeverywhere.EditCoqCode>
+    </jp.ac.titech.itpro.sdl.amutake.proveeverywhere.EditCoqCode>
     <include layout="@layout/command_buttons"
         android:layout_height="wrap_content"/>
 </LinearLayout>
