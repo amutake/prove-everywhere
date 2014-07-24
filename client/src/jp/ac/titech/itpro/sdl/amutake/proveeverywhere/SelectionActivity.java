@@ -15,6 +15,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListAdapter;
 import android.widget.ListView;
@@ -32,6 +34,7 @@ public class SelectionActivity extends Activity {
 		SQLiteDatabase db = helper.getWritableDatabase();
 		Cursor cursor = db.query(CoqCodeColumns.TBNAME, null, null, null, null, null, CoqCodeColumns.LAST_MODIFIED_AT + " DESC");
 		ArrayList<CoqCode> codeList = new ArrayList<CoqCode>();
+		codeList.add(new CoqCode(0, "hoge.v", "Theorem hoge : forall n : nat, n + O = n."));
 		if (cursor != null) {
 			while (cursor.moveToNext()) {
 				long id = cursor.getLong(cursor.getColumnIndex(CoqCodeColumns._ID));
@@ -42,8 +45,19 @@ public class SelectionActivity extends Activity {
 		}
 
 		ListView codeListView = (ListView) findViewById(R.id.code_list);
-		ListAdapter adapter = new ArrayAdapter<CoqCode>(this, android.R.layout.simple_list_item_1, codeList);
+		final ListAdapter adapter = new ArrayAdapter<CoqCode>(this, android.R.layout.simple_list_item_1, codeList);
 		codeListView.setAdapter(adapter);
+		codeListView.setOnItemClickListener(new OnItemClickListener() {
+			@Override
+			public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+				CoqCode selected = (CoqCode) adapter.getItem(position);
+				Intent intent = new Intent(getApplicationContext(), EditerActivity.class);
+				intent.putExtra(Strings.codeId, selected.getId());
+				intent.putExtra(Strings.codeName, selected.getName());
+				intent.putExtra(Strings.codeContent, selected.getCode());
+				startActivity(intent);
+			}
+		});
 	}
 
 

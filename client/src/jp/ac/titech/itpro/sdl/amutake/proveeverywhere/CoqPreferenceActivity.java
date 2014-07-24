@@ -42,9 +42,9 @@ public class CoqPreferenceActivity extends Activity {
 			super.onCreate(savedInstanceState);
 			addPreferencesFromResource(R.xml.pref);
 
-			EditTextPreference hostnamePref = (EditTextPreference) findPreference("hostname_key");
+			EditTextPreference hostnamePref = (EditTextPreference) findPreference(Strings.hostnameKey);
 			hostnamePref.setSummary(hostnamePref.getText());
-			EditTextPreference portPref = (EditTextPreference) findPreference("port_key");
+			EditTextPreference portPref = (EditTextPreference) findPreference(Strings.portKey);
 			portPref.setSummary(portPref.getText());
 		}
 
