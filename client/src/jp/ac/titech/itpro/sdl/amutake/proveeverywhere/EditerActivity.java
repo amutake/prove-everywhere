@@ -9,6 +9,7 @@ public class EditerActivity extends Activity {
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
+
 		Intent i = getIntent();
 		String code = i.getStringExtra(Strings.codeContent);
 

@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/info_area_wrapper"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:gravity="top"
+    android:orientation="vertical">
+    <TextView
+        android:id="@+id/proof_state_area"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="2"
+        android:typeface="monospace"
+        android:gravity="top"
+        android:scrollbars="vertical|horizontal"/>
+    <TextView
+        android:id="@+id/info_area"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:typeface="monospace"
+        android:gravity="top"
+        android:scrollbars="vertical|horizontal"/>
+</LinearLayout>
