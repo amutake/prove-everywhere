@@ -5,6 +5,7 @@ import org.json.JSONObject;
 
 import com.android.volley.Response.Listener;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -13,6 +14,7 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -90,6 +92,10 @@ public class EditerActivity extends Activity {
 			infoArea.setText(savedInstanceState.getString(INFO_KEY));
 			coqtopId = savedInstanceState.getInt(COQTOP_ID_KEY);
 		}
+
+		ActionBar actionBar = getActionBar();
+		actionBar.setHomeButtonEnabled(true);
+		actionBar.setDisplayHomeAsUpEnabled(true);
 	}
 
 	@Override
@@ -101,6 +107,18 @@ public class EditerActivity extends Activity {
 				Log.d(TAG, "terminate coqtop");
 			}
 		});
+	}
+
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		int id = item.getItemId();
+		switch (id) {
+		case android.R.id.home:
+			finish();
+			return true;
+		default:
+			return super.onMenuItemSelected(featureId, item);
+		}
 	}
 
 	// Refactor this
