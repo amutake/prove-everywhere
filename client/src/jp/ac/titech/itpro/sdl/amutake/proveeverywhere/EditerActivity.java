@@ -20,6 +20,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.TextView;
 
 public class EditerActivity extends Activity {
@@ -31,6 +32,8 @@ public class EditerActivity extends Activity {
 	private int coqtopId;
 	private CoqtopState coqtopState;
 	private CoqtopClient client;
+
+	private EditText nameArea;
 	private EditCoqCode codeArea;
 	private TextView proofStateArea;
 	private TextView infoArea;
@@ -64,6 +67,7 @@ public class EditerActivity extends Activity {
 
 		View codeAreaWrapper = findViewById(R.id.code_area_wrapper);
 		View infoAreaWrapper = findViewById(R.id.info_area_wrapper);
+		nameArea = (EditText) codeAreaWrapper.findViewById(R.id.name_area);
 		codeArea = (EditCoqCode) codeAreaWrapper.findViewById(R.id.code_area);
 		proofStateArea = (TextView) infoAreaWrapper.findViewById(R.id.proof_state_area);
 		infoArea = (TextView) infoAreaWrapper.findViewById(R.id.info_area);
@@ -82,6 +86,7 @@ public class EditerActivity extends Activity {
 		setListeners();
 
 		if (savedInstanceState == null) {
+			nameArea.setText(codeName);
 			codeArea.setText(codeContent);
 			// coqtop start
 			client.startCoqtop(new Listener<InitialInfo>() {
@@ -132,8 +137,8 @@ public class EditerActivity extends Activity {
 	private void updateCoqCode() {
 		ContentValues values = new ContentValues();
 		values.put(CoqCodeColumns.CODE, codeArea.getText().toString());
+		values.put(CoqCodeColumns.NAME, nameArea.getText().toString());
 		if (codeId == -1) {
-			values.put(CoqCodeColumns.NAME, "hoge.v");
 			db.insert(CoqCodeColumns.TBNAME, "", values);
 		} else {
 			String whereClause = CoqCodeColumns._ID + " = ?";

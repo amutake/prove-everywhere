@@ -5,13 +5,19 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:gravity="top">
+    <EditText 
+        android:id="@+id/name_area"
+        android:labelFor="@id/name_area"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType=""/>
     <jp.ac.titech.itpro.sdl.amutake.proveeverywhere.EditCoqCode
         android:id="@+id/code_area"
         android:labelFor="@id/code_area"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:ems="10"
-        android:inputType="textMultiLine|textNoSuggestions"
+        android:inputType="textMultiLine|textNoSuggestions|textVisiblePassword"
         android:typeface="monospace"
         android:gravity="top"
         android:scrollbars="vertical|horizontal"
