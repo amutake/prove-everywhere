@@ -1,11 +1,20 @@
 package jp.ac.titech.itpro.sdl.amutake.proveeverywhere;
 
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import com.android.volley.Response.Listener;
+
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
+import android.util.Log;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -31,6 +40,9 @@ public class EditerActivity extends Activity {
 	private final static String INFO_KEY = "INFO_KEY";
 	private final static String COQTOP_ID_KEY = "COQTOP_ID_KEY";
 
+	// debug
+	private final static String TAG = "editer activity";
+
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -52,9 +64,166 @@ public class EditerActivity extends Activity {
 		gotoButton = (Button) findViewById(R.id.goto_button);
 		restartButton = (Button) findViewById(R.id.restart_button);
 
-		SharedPreferences pref = getSharedPreferences("pref", Context.MODE_PRIVATE);
-		client = new CoqtopClient(pref.getString(Strings.hostnameKey, ""), pref.getInt(Strings.portKey, 0), getApplicationContext());
+		SharedPreferences pref = PreferenceManager.getDefaultSharedPreferences(this);
+		client = new CoqtopClient(
+				pref.getString(Strings.hostnameKey, ""),
+				Integer.parseInt(pref.getString(Strings.portKey, "0")),
+				getApplicationContext());
+
+		setListeners();
+
+		if (savedInstanceState == null) {
+			codeArea.setText(codeContent);
+			// coqtop start
+			client.startCoqtop(new Listener<InitialInfo>() {
+				@Override
+				public void onResponse(InitialInfo info) {
+					coqtopId = info.getId();
+					coqtopState = info.getState();
+					proofStateArea.setText("");
+					infoArea.setText(info.getOutput());
+				}
+			});
+		} else {
+			codeArea.setText(savedInstanceState.getString(CODE_KEY));
+			proofStateArea.setText(savedInstanceState.getString(PROOF_STATE_KEY));
+			infoArea.setText(savedInstanceState.getString(INFO_KEY));
+			coqtopId = savedInstanceState.getInt(COQTOP_ID_KEY);
+		}
+	}
+
+	@Override
+	public void onDestroy() {
+		super.onDestroy();
+		client.terminateCoqtop(coqtopId, new Listener<JSONObject>() {
+			@Override
+			public void onResponse(JSONObject json) {
+				Log.d(TAG, "terminate coqtop");
+			}
+		});
+	}
+
+	// Refactor this
+	private void setListeners() {
+		nextButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String command = codeArea.getNextCommand();
+				codeArea.evaluating(command.length());
+
+				Log.d("command", command);
+
+				client.commandCoqtop(coqtopId, command, new Listener<OutputDetail>() {
+					@Override
+					public void onResponse(OutputDetail output) {
+						coqtopState = output.getState();
+						Output lastOutput = output.getLastOutput();
+						if (lastOutput != null) {
+							switch (lastOutput.getType()) {
+							case PROOF:
+								proofStateArea.setText(lastOutput.getOutput());
+								infoArea.setText("");
+								break;
+							case INFO:
+								infoArea.setText(lastOutput.getOutput());
+								break;
+							default:
+								Log.d("CommandButton", "unexpected response (lastOutput.getType() == error)");
+								break;
+							}
+						}
+						Output errorOutput = output.getErrorOutput();
+						if (errorOutput != null) {
+							infoArea.setText(errorOutput.getOutput());
+							codeArea.rollback();
+						} else {
+							codeArea.commit();
+						}
+					}
+				}, new Listener<JSONException>() {
+					@Override
+					public void onResponse(JSONException e) {
+						AlertDialog.Builder alertDialog = new AlertDialog.Builder(getApplicationContext());
+						alertDialog.setTitle("unexpected error");
+						alertDialog.setMessage(e.toString());
+						alertDialog.create().show();
+						codeArea.rollback();
+					}
+				});
+			}
+		});
 
 
+
+		backButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				int offset = codeArea.getBackOffset();
+				codeArea.evaluating(-offset);
+				client.commandCoqtop(coqtopId, "Back 1.", new Listener<OutputDetail>() {
+					@Override
+					public void onResponse(OutputDetail output) {
+						coqtopState = output.getState();
+						Output lastOutput = output.getLastOutput();
+						if (lastOutput != null) {
+							switch (lastOutput.getType()) {
+							case PROOF:
+								proofStateArea.setText(lastOutput.getOutput());
+								infoArea.setText("");
+								break;
+							case INFO:
+								infoArea.setText(lastOutput.getOutput());
+								break;
+							default:
+								Log.d("BackButton", "unexpected response");
+								break;
+							}
+						}
+						Output errorOutput = output.getErrorOutput();
+						if (errorOutput != null) {
+							infoArea.setText(errorOutput.getOutput());
+							codeArea.rollback();
+						} else {
+							codeArea.commit();
+						}
+					}
+				}, new Listener<JSONException>() {
+					@Override
+					public void onResponse(JSONException e) {
+						AlertDialog.Builder alertDialog = new AlertDialog.Builder(getApplicationContext());
+						alertDialog.setTitle("unexpected error");
+						alertDialog.setMessage(e.toString());
+						alertDialog.create().show();
+						codeArea.rollback();
+					}
+				});
+			}
+		});
+
+		restartButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				codeArea.evaluating(-codeArea.getEvaluatedOffset());
+
+				client.terminateCoqtop(coqtopId, new Listener<JSONObject>() {
+					@Override
+					public void onResponse(JSONObject json) {
+						Log.i(TAG, "terminate coqtop");
+					}
+				});
+
+				client.startCoqtop(new Listener<InitialInfo>() {
+					@Override
+					public void onResponse(InitialInfo info) {
+						coqtopId = info.getId();
+						coqtopState = info.getState();
+						proofStateArea.setText("");
+						infoArea.setText(info.getOutput());
+						codeArea.commit();
+					}
+				});
+
+			}
+		});
 	}
 }
