@@ -138,6 +138,7 @@ public class EditerActivity extends Activity {
 		ContentValues values = new ContentValues();
 		values.put(CoqCodeColumns.CODE, codeArea.getText().toString());
 		values.put(CoqCodeColumns.NAME, nameArea.getText().toString());
+		Log.d(TAG, Long.toString(codeId));
 		if (codeId == -1) {
 			db.insert(CoqCodeColumns.TBNAME, "", values);
 		} else {

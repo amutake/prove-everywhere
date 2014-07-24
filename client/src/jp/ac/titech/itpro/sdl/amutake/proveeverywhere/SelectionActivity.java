@@ -74,7 +74,7 @@ public class SelectionActivity extends Activity {
 				final CoqCode selected = adapter.getItem(position);
 				AlertDialog.Builder adb = new AlertDialog.Builder(SelectionActivity.this);
 				adb.setTitle("Delete?");
-				adb.setMessage("Are you sure you want to delete '" + selected.getName() + "'");
+				adb.setMessage("Are you sure you want to delete '" + selected.getName() + "'?");
 				adb.setNegativeButton("Cancel", new AlertDialog.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
@@ -116,6 +116,7 @@ public class SelectionActivity extends Activity {
 			startActivity(new Intent(this, CoqPreferenceActivity.class));
 			return true;
 		case R.id.new_code:
+			startActivity(new Intent(this, EditerActivity.class));
 			return true;
 		default:
 			return super.onOptionsItemSelected(item);
