@@ -86,24 +86,24 @@ public class EditerActivity extends Activity {
 
 		setListeners();
 
+		// coqtop start
+		client.startCoqtop(new Listener<InitialInfo>() {
+			@Override
+			public void onResponse(InitialInfo info) {
+				coqtopId = info.getId();
+				coqtopState = info.getState();
+				proofStateArea.setText("");
+				infoArea.setText(info.getOutput());
+			}
+		});
+
 		if (savedInstanceState == null) {
 			nameArea.setText(codeName);
 			codeArea.setText(codeContent);
-			// coqtop start
-			client.startCoqtop(new Listener<InitialInfo>() {
-				@Override
-				public void onResponse(InitialInfo info) {
-					coqtopId = info.getId();
-					coqtopState = info.getState();
-					proofStateArea.setText("");
-					infoArea.setText(info.getOutput());
-				}
-			});
 		} else {
 			codeArea.setText(savedInstanceState.getString(CODE_KEY));
 			proofStateArea.setText(savedInstanceState.getString(PROOF_STATE_KEY));
 			infoArea.setText(savedInstanceState.getString(INFO_KEY));
-			coqtopId = savedInstanceState.getInt(COQTOP_ID_KEY);
 		}
 
 		ActionBar actionBar = getActionBar();
@@ -117,6 +117,7 @@ public class EditerActivity extends Activity {
 		client.terminateCoqtop(coqtopId, new Listener<JSONObject>() {
 			@Override
 			public void onResponse(JSONObject json) {
+				codeArea.reset();
 				Log.d(TAG, "terminate coqtop");
 			}
 		});
@@ -133,6 +134,11 @@ public class EditerActivity extends Activity {
 		default:
 			return super.onMenuItemSelected(featureId, item);
 		}
+	}
+
+	@Override
+	protected void onSaveInstanceState(Bundle outState) {
+		super.onSaveInstanceState(outState);
 	}
 
 	private void updateCoqCode() {
@@ -213,6 +219,7 @@ public class EditerActivity extends Activity {
 				client.commandCoqtop(coqtopId, "Back 1.", new Listener<OutputDetail>() {
 					@Override
 					public void onResponse(OutputDetail output) {
+						CoqtopState oldState = coqtopState;
 						coqtopState = output.getState();
 						Output lastOutput = output.getLastOutput();
 						if (lastOutput != null) {
@@ -234,7 +241,14 @@ public class EditerActivity extends Activity {
 							infoArea.setText(errorOutput.getOutput());
 							codeArea.rollback();
 						} else {
-							codeArea.commit();
+							int d = oldState.getWholeStateNumber() - coqtopState.getWholeStateNumber();
+							if (d == 1) {
+								codeArea.commit();
+							} else {
+								int offset = codeArea.getMultiBackOffset(d);
+								codeArea.evaluating(-offset);
+								codeArea.commit();
+							}
 						}
 					}
 				}, new Listener<JSONException>() {

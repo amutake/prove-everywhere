@@ -1,6 +1,7 @@
 package jp.ac.titech.itpro.sdl.amutake.proveeverywhere;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -28,8 +29,20 @@ public class EditCoqCode extends EditText {
 		super(context, attrs, defStyle);
 	}
 
-	public int getNumOfCommandsFromPosition(int position) {
-		return position;
+	public int getNumOfCommandsFromOffset(int offset) {
+		int n = 0;
+		int length = 0;
+		ArrayList<String> commands = getAllCommands();
+		for (String command : commands) {
+			int len = command.length();
+			if (length >= offset) {
+				return n;
+			} else {
+				length += len;
+				n++;
+			}
+		}
+		return n;
 	}
 
 	public String getNextCommand() {
@@ -56,6 +69,25 @@ public class EditCoqCode extends EditText {
 			offset -= len;
 		}
 		return 0;
+	}
+
+	public int getMultiBackOffset(int n) {
+		ArrayList<String> commands = getAllCommands();
+		int evaluated = getNumOfEvaluatedCommands();
+		List<String> subCommands = commands.subList(evaluated - n, evaluated);
+		return concatLength(subCommands);
+	}
+
+	public int getNumOfEvaluatedCommands() {
+		return getNumOfCommandsFromOffset(evaluatedOffset);
+	}
+
+	private static int concatLength(List<String> arr) {
+		int len = 0;
+		for (String elem : arr) {
+			len += elem.length();
+		}
+		return len;
 	}
 
 	public void goTo() {
@@ -156,5 +188,10 @@ public class EditCoqCode extends EditText {
 			span.setSpan(new BackgroundColorSpan(EvaluatingColor), evaluatingOffset, evaluatedOffset, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE);
 		}
 		setText(span);
+	}
+
+	public void reset() {
+		setEvaluatingOffset(0);
+		commit();
 	}
 }
