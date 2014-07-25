@@ -75,23 +75,35 @@ public class EditCoqCode extends EditText {
 		ArrayList<String> commands = getAllCommands();
 		int evaluated = getNumOfEvaluatedCommands();
 		List<String> subCommands = commands.subList(evaluated - n, evaluated);
-		return concatLength(subCommands);
+		return concat(subCommands).length();
 	}
 
 	public int getNumOfEvaluatedCommands() {
 		return getNumOfCommandsFromOffset(evaluatedOffset);
 	}
 
-	private static int concatLength(List<String> arr) {
-		int len = 0;
-		for (String elem : arr) {
-			len += elem.length();
+	private static String concat(List<String> list) {
+		String str = "";
+		for (String elem : list) {
+			str += elem;
 		}
-		return len;
+		return str;
 	}
 
-	public void goTo() {
-
+	public String gotoWithEvaluating() {
+		int nEvaluated = getNumOfEvaluatedCommands();
+		int cursor = getSelectionStart();
+		int nEvaluating = getNumOfCommandsFromOffset(cursor);
+		ArrayList<String> commands = getAllCommands();
+		if (nEvaluating < nEvaluated) {
+			int offset = concat(commands.subList(nEvaluating, nEvaluated)).length();
+			evaluating(-offset);
+			return "Back " + (nEvaluated - nEvaluating) + ".";
+		} else {
+			List<String> subCommands = commands.subList(nEvaluated, nEvaluating);
+			evaluating(concat(subCommands).length());
+			return concat(subCommands);
+		}
 	}
 
 	public ArrayList<String> getCommandsUntilCursor() {

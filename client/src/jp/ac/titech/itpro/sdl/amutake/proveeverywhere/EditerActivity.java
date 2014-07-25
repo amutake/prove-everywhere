@@ -264,6 +264,54 @@ public class EditerActivity extends Activity {
 			}
 		});
 
+		gotoButton.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				String command = codeArea.gotoWithEvaluating();
+
+				Log.d("command", command);
+
+				client.commandCoqtop(coqtopId, command, new Listener<OutputDetail>() {
+					@Override
+					public void onResponse(OutputDetail output) {
+						coqtopState = output.getState();
+						Output lastOutput = output.getLastOutput();
+						if (lastOutput != null) {
+							switch (lastOutput.getType()) {
+							case PROOF:
+								proofStateArea.setText(lastOutput.getOutput());
+								infoArea.setText("");
+								break;
+							case INFO:
+								infoArea.setText(lastOutput.getOutput());
+								break;
+							default:
+								Log.d("CommandButton", "unexpected response (lastOutput.getType() == error)");
+								break;
+							}
+						}
+						Output errorOutput = output.getErrorOutput();
+						if (errorOutput != null) {
+							infoArea.setText(errorOutput.getOutput());
+							codeArea.rollback();
+						} else {
+							codeArea.commit();
+						}
+					}
+				}, new Listener<JSONException>() {
+					@Override
+					public void onResponse(JSONException e) {
+						AlertDialog.Builder alertDialog = new AlertDialog.Builder(getApplicationContext());
+						alertDialog.setTitle("unexpected error");
+						alertDialog.setMessage(e.toString());
+						alertDialog.create().show();
+						codeArea.rollback();
+					}
+				});
+			}
+		});
+
+
 		restartButton.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
