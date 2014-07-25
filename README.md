@@ -1,6 +1,8 @@
 ProveEverywhere
 ===============
 
+(このアプリは、東京工業大学大学院の[ソフトウェア開発演習](https://github.com/itspsdl)という授業の最終課題のために作られました)
+
 ProofGeneral の Android アプリ版のような感じ。
 coqtop サーバと通信する。
 
