@@ -3,12 +3,15 @@
 module ProveEverywhere.Server where
 
 import Prelude hiding (lookup)
+import Control.Concurrent (forkIO, threadDelay)
 import Control.Concurrent.MVar
 import Control.Exception
+import Control.Monad (void)
 import Data.Aeson
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
+import Data.Time.Clock (getCurrentTime, diffUTCTime)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp (run)
@@ -23,7 +26,23 @@ runServer :: Config -> IO ()
 runServer config = do
     coqtopMap <- newMVar HM.empty
     seed <- newMVar 0
+    maybe (return ()) (void . forkIO . sweeper coqtopMap) $ configKillTime config
     run (configPort config) (server config coqtopMap seed)
+
+sweeper :: MVar CoqtopMap -> Int -> IO ()
+sweeper coqtopMap minute = do
+    now <- getCurrentTime
+    pairs <- withMVar coqtopMap $ return . filter (isExpired now) . HM.toList
+    mapM_ kill pairs
+    threadDelay 60000000 -- 1 minute
+    sweeper coqtopMap minute
+  where
+    kill (i, c) = do
+        terminateCoqtop c
+        delete coqtopMap i
+    isExpired now (_, c) =
+        let diff = diffUTCTime now (coqtopLastModified c) in
+        diff > fromInteger (toInteger (minute * 60))
 
 server :: Config -> MVar CoqtopMap -> MVar Int -> Application
 server config coqtopMap seed req respond = handle unknownError $

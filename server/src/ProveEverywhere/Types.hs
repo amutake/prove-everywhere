@@ -9,6 +9,7 @@ import Data.Monoid
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
+import Data.Time.Clock (UTCTime)
 import Network.Wai.Handler.Warp (Port)
 import System.Process (ProcessHandle)
 import System.IO (Handle)
@@ -27,6 +28,7 @@ data Coqtop = Coqtop
     , coqtopStderr :: Handle
     , coqtopProcessHandle :: ProcessHandle
     , coqtopState :: CoqtopState
+    , coqtopLastModified :: UTCTime
     }
 
 data InitialInfo = InitialInfo

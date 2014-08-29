@@ -8,6 +8,7 @@ import qualified Data.ByteString.Char8 as B
 import Data.Text (Text)
 import qualified Data.Text as T
 import qualified Data.Text.Encoding as E
+import Data.Time.Clock (getCurrentTime)
 import Data.Monoid
 import System.Process
 import System.IO
@@ -26,6 +27,7 @@ startCoqtop n = do
     (Just inp, Just out, Just err, ph) <- createProcess cmd
     result <- hGetOutputPair (out, err)
     hSetEncoding err char8
+    now <- getCurrentTime
     return $ flip fmap result $ \(o, p) -> do
         let coqtop = Coqtop
                 { coqtopId = n
@@ -34,6 +36,7 @@ startCoqtop n = do
                 , coqtopStderr = err
                 , coqtopProcessHandle = ph
                 , coqtopState = p
+                , coqtopLastModified = now
                 }
         (coqtop, o)
 
@@ -54,12 +57,14 @@ commandCoqtop coqtop (Command cmd) = loop coqtop 0 Nothing $ splitCommands cmd
                 , coqtopOutputError = Nothing
                 , coqtopOutputState = coqtopState coqtop'
                 }
-        return $ Right (coqtop', coqOut)
+        now <- getCurrentTime
+        return $ Right (coqtop' { coqtopLastModified = now }, coqOut)
     loop coqtop' acc lastOut (t:ts) = do
         result <- putAndGet coqtop' t
         case result of
             Left err -> return $ Left err
             Right (state, output) -> do
+                now <- getCurrentTime
                 if outputType output == ErrorOutput
                     then do
                         let coqOut = CoqtopOutput
@@ -70,8 +75,10 @@ commandCoqtop coqtop (Command cmd) = loop coqtop 0 Nothing $ splitCommands cmd
                                 , coqtopOutputError = Just output
                                 , coqtopOutputState = coqtopState coqtop'
                                 }
-                        return $ Right (coqtop', coqOut)
-                    else loop (coqtop' { coqtopState = state }) (acc + 1) (Just output) ts
+                        return $ Right (coqtop' { coqtopLastModified = now }, coqOut)
+                    else loop (coqtop' { coqtopState = state
+                                       , coqtopLastModified = now
+                                       }) (acc + 1) (Just output) ts
 
 putAndGet :: Coqtop -> Text -> IO (Either ServerError (CoqtopState, Output))
 putAndGet coqtop t = do
