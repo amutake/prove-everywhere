@@ -130,14 +130,21 @@ hGetOutput handle = hReady handle >>= handler
 
 hGetOutputPair :: (Handle, Handle) -> IO (Either ServerError (Text, CoqtopState))
 hGetOutputPair (out, err) = do
-    hWait err
-    p <- T.strip . E.decodeUtf8With onError <$> hGetOutput err
+    p <- errOutput -- wait stderr
     o <- T.strip . E.decodeUtf8 <$> hGetOutput out
+    print p
     case parsePrompt p of
         Left perr -> return $ Left $ PromptParseError perr
         Right prompt -> return $ Right (o, prompt)
   where
     onError _ _ = Nothing
+    errOutput = do
+        hWait err
+        p <- T.strip . E.decodeUtf8With onError <$> hGetOutput err
+        if T.isInfixOf "</prompt>" p then return p else do
+            p' <- errOutput
+            return $ p <> p'
+
 
 hWait :: Handle -> IO ()
 hWait handle = hWaitForInput handle 100 >>= handler
