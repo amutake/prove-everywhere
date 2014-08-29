@@ -23,10 +23,10 @@ runServer :: Config -> IO ()
 runServer config = do
     coqtopMap <- newMVar HM.empty
     seed <- newMVar 0
-    run (configPort config) (server coqtopMap seed)
+    run (configPort config) (server config coqtopMap seed)
 
-server :: MVar CoqtopMap -> MVar Int -> Application
-server coqtopMap seed req respond = handle unknownError $
+server :: Config -> MVar CoqtopMap -> MVar Int -> Application
+server config coqtopMap seed req respond = handle unknownError $
     case pathInfo req of
         ["start"] -> start
         ["command", n] | isNatural n -> command $ read $ T.unpack n
@@ -51,10 +51,17 @@ server coqtopMap seed req respond = handle unknownError $
     unknownError :: SomeException -> IO ResponseReceived
     unknownError = respond . errorResponse . UnknownError . T.pack . show
 
-    start = do
-        n <- fresh seed
-        res <- handleError (startCoqtop n) initialResponse
-        respond res
+    start = case configMaxNumProcs config of
+        Nothing -> start'
+        Just limit -> do
+            n <- size coqtopMap
+            if n < limit then start' else
+                respond $ errorResponse $ ExceededMaxProcsError limit
+      where
+        start' = do
+            n <- fresh seed
+            res <- handleError (startCoqtop n) initialResponse
+            respond res
 
     command n = do
         res <- withCoqtop coqtopMap n $ \coqtop -> do
@@ -81,6 +88,9 @@ lookup coqtopMap n = withMVar coqtopMap $ return . HM.lookup n
 delete :: MVar CoqtopMap -> Int -> IO ()
 delete coqtopMap n = modifyMVar_ coqtopMap (return . HM.delete n)
 
+size :: MVar CoqtopMap -> IO Int
+size coqtopMap = withMVar coqtopMap $ return . HM.size
+
 responseJSON :: ToJSON a => Status -> a -> Response
 responseJSON status a =
     responseLBS status [(hContentType, "application/json")] (encode a)
@@ -102,6 +112,7 @@ errorResponse e@(PromptParseError _) = responseJSON status500 e
 errorResponse e@(RequestParseError _) = responseJSON status400 e
 errorResponse e@(NoSuchApiError _) = responseJSON status404 e
 errorResponse e@(UnknownError _) = responseJSON status500 e
+errorResponse e@(ExceededMaxProcsError _) = responseJSON status400 e
 
 withDecodedBody :: FromJSON a => Request -> (a -> IO Response) -> IO Response
 withDecodedBody req cont = do

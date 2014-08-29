@@ -15,7 +15,9 @@ import System.IO (Handle)
 import Text.Parsec (ParseError)
 
 data Config = Config
-    { configPort :: Port
+    { configPort :: Port -- ^ port number
+    , configMaxNumProcs :: Maybe Int -- ^ max number of coqtop processes
+    , configKillTime :: Maybe Int -- ^ per minute. default is infinity
     } deriving (Eq, Show)
 
 data Coqtop = Coqtop
@@ -67,6 +69,7 @@ data ServerError
     | RequestParseError ByteString
     | NoSuchApiError [Text]
     | UnknownError Text
+    | ExceededMaxProcsError Int
     deriving (Show)
 
 instance ToJSON ServerError where
@@ -103,6 +106,13 @@ instance ToJSON ServerError where
             [ "id" .= (4 :: Int)
             , "type" .= ("UnknownError" :: Text)
             , "message" .= t
+            ]
+        ]
+    toJSON (ExceededMaxProcsError n) = object
+        [ "error" .= object
+            [ "id" .= (5 :: Int)
+            , "type" .= ("ExceededMaxProcsError" :: Text)
+            , "message" .= ("Exceeded max number of coqtop processes: " <> T.pack (show n))
             ]
         ]
 

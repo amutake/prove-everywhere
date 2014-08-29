@@ -1,3 +1,4 @@
+
 module Main where
 
 import Control.Exception
@@ -29,6 +30,8 @@ main = do
 configParser :: Parser Config
 configParser = Config
     <$> option (long "port" <> short 'p' <> metavar "PORT" <> help "Specify port number")
+    <*> optional (option (long "number" <> short 'n' <> metavar "NUM_OF_PROCS" <> help "Max number of coqtop processes (default: infinity)"))
+    <*> optional (option (long "time" <> short 't' <> metavar "KILL_TIME" <> help "The time to terminate coqtop process (per minute) (default: infinity)"))
 
 getCoqtopVersion :: IO (Maybe (Int, Int, Int)) -- e.g., (8, 4, 4) = 8.4pl4
 getCoqtopVersion = handle failure $ do
