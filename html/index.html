@@ -1,0 +1,36 @@
+<html>
+  <head>
+    <title>ProveEverywhere</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="main.css" type="text/css">
+  </head>
+  <body>
+    <p>Coq お試し</p>
+
+    <ul>
+      <li>Coq 8.4pl4</li>
+      <li>SSReflect 1.5</li>
+      <li>MathComp 1.5</li>
+    </ul>
+
+    <p>同時接続は50まで</p>
+    <!-- <p>10分何もしないとプロセスが削除されます</p> -->
+
+    <textarea id="codearea"></textarea>
+
+    <ul>
+      <li><input id="nextbutton" type="button" value="Eval"></li>
+      <!-- <li><input id="backbutton" type="button" value="▶"></li> -->
+      <!-- <li><input id="restartbutton" type="button" value="Restart"></li> -->
+    </ul>
+
+    <pre><code id="proofarea"></code></pre>
+    <pre><code id="infoarea"></code></pre>
+
+    <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
+    <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="./main.js"></script>
+  </body>
+</html>
