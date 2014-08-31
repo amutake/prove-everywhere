@@ -23,7 +23,7 @@ See: `prove-everywhere-server --help`
 API
 ---
 
-### PUT /start
+### POST /start
 
 This API starts new coqtop process and returns initial information.
 

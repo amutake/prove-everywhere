@@ -2,7 +2,9 @@ $(function() {
 
     // url : String -> String
     var url = function(api) {
-        return "http://amutake.me/coq/api/" + api;
+        var hostname = "amutake.me";
+        var port = "50905";
+        return "http://" + hostname + ":" + port + "/" + api;
     };
 
     // error : XMLHttpRequest -> StatusCode -> String -> IO ()

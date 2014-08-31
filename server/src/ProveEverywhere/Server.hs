@@ -8,6 +8,7 @@ import Control.Concurrent.MVar
 import Control.Exception
 import Control.Monad (void)
 import Data.Aeson
+import Data.CaseInsensitive ()
 import Data.HashMap.Strict (HashMap)
 import qualified Data.HashMap.Strict as HM
 import qualified Data.Text as T
@@ -112,7 +113,11 @@ size coqtopMap = withMVar coqtopMap $ return . HM.size
 
 responseJSON :: ToJSON a => Status -> a -> Response
 responseJSON status a =
-    responseLBS status [(hContentType, "application/json")] (encode a)
+    responseLBS status [ (hContentType, "application/json")
+                       , (hAccessControlAllowOrigin, "*")
+                       ] (encode a)
+  where
+    hAccessControlAllowOrigin = "Access-Control-Allow-Origin"
 
 withCoqtop :: MVar CoqtopMap -> Int -> (Coqtop -> IO Response) -> IO Response
 withCoqtop coqtopMap n cont = do
