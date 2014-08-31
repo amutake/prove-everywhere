@@ -117,10 +117,12 @@ responseJSON status a =
     responseLBS status [ (hContentType, "application/json")
                        , (hAccessControlAllowOrigin, "*")
                        , (hAccessControlAllowMethods, "GET, POST, PUT, DELETE, OPTIONS")
+                       , (hAccessControlAllowHeaders, "Accept, Content-Type")
                        ] (encode a)
   where
     hAccessControlAllowOrigin = "Access-Control-Allow-Origin"
     hAccessControlAllowMethods = "Access-Control-Allow-Methods"
+    hAccessControlAllowHeaders = "Access-Control-Allow-Headers"
 
 withCoqtop :: MVar CoqtopMap -> Int -> (Coqtop -> IO Response) -> IO Response
 withCoqtop coqtopMap n cont = do
