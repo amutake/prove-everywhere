@@ -47,11 +47,12 @@ sweeper coqtopMap minute = do
 
 server :: Config -> MVar CoqtopMap -> MVar Int -> Application
 server config coqtopMap seed req respond = handle unknownError $
-    case pathInfo req of
-        ["start"] -> start
-        ["command", n] | isNatural n -> command $ read $ T.unpack n
-        ["terminate", n] | isNatural n -> terminate $ read $ T.unpack n
-        paths -> do
+    case (pathInfo req, requestMethod req) of
+        (["start"], "POST") -> start
+        (["command", n], "POST") | isNatural n -> command $ read $ T.unpack n
+        (["terminate", n], "DELETE") | isNatural n -> terminate $ read $ T.unpack n
+        (_, "OPTIONS") -> respond $ responseJSON status200 EmptyObject
+        (paths, _) -> do
             let res = NoSuchApiError paths
             respond $ errorResponse res
   where
@@ -115,7 +116,7 @@ responseJSON :: ToJSON a => Status -> a -> Response
 responseJSON status a =
     responseLBS status [ (hContentType, "application/json")
                        , (hAccessControlAllowOrigin, "*")
-                       , (hAccessControlAllowMethods, "*")
+                       , (hAccessControlAllowMethods, "GET, POST, PUT, DELETE, OPTIONS")
                        ] (encode a)
   where
     hAccessControlAllowOrigin = "Access-Control-Allow-Origin"
