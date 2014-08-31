@@ -4,7 +4,7 @@ ProveEverywhere
 どこでも Coq で証明できるようにするプロジェクトです。
 
 - /server
-  - The server for this project
+  - coqtop server
 - /android
   - Android application
 - /html
