@@ -115,9 +115,11 @@ responseJSON :: ToJSON a => Status -> a -> Response
 responseJSON status a =
     responseLBS status [ (hContentType, "application/json")
                        , (hAccessControlAllowOrigin, "*")
+                       , (hAccessControlAllowMethods, "*")
                        ] (encode a)
   where
     hAccessControlAllowOrigin = "Access-Control-Allow-Origin"
+    hAccessControlAllowMethods = "Access-Control-Allow-Methods"
 
 withCoqtop :: MVar CoqtopMap -> Int -> (Coqtop -> IO Response) -> IO Response
 withCoqtop coqtopMap n cont = do
