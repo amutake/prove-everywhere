@@ -17,11 +17,6 @@ $(function() {
         }
     };
 
-    // br : String -> String
-    var br = function(str) {
-        return str.replace(/\n/g, "<br>");
-    }
-
     var id = -1;
     var evaluated = 0;
     var evaluating = 0;
@@ -31,7 +26,7 @@ $(function() {
             url: url("start"),
             type: "POST",
             success: function(info, status, xhr) {
-                $("#infoarea").text(br(info.output));
+                $("#infoarea").text(info.output);
                 id = info.id
             },
             error: error,
@@ -52,12 +47,12 @@ $(function() {
                 if (output.error_output === null) {
                     var outputType = output.last_output.type;
                     if (outputType === "proof") {
-                        $("#proofarea").html(br(output.last_output.output));
+                        $("#proofarea").html(output.last_output.output);
                     } else {
-                        $("#infoarea").html(br(output.last_output.output));
+                        $("#infoarea").html(output.last_output.output);
                     }
                 } else {
-                    $("#infoarea").html(br(output.error_output.output));
+                    $("#infoarea").html(output.error_output.output);
                 }
             },
             error: error,
