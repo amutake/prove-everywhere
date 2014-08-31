@@ -71,12 +71,14 @@ $(function() {
         });
     };
 
-    start();
+    start(function() {
+        terminate();
+    });
 
     $("#nextbutton").on("click", function() {
-        terminate(function() {
-            start(function() {
-                command($("#codearea").val());
+        start(function() {
+            command($("#codearea").val(), function() {
+                terminate();
             });
         });
     });
