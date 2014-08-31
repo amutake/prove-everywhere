@@ -7,27 +7,28 @@
     <link rel="stylesheet" href="main.css" type="text/css">
   </head>
   <body>
-    <p>Coq お試し</p>
+    <div class="container">
+      <h4>ProveEverywhere - HTML Version</h4>
+      <div class="row">
+        <div class="col-xs-12 col-sm-6 col-md-6">
 
-    <ul>
-      <li>Coq 8.4pl4</li>
-      <li>SSReflect 1.5</li>
-      <li>MathComp 1.5</li>
-    </ul>
+          <textarea id="codearea" class="form-control" rows="10"></textarea>
 
-    <p>同時接続は50まで</p>
-    <!-- <p>10分何もしないとプロセスが削除されます</p> -->
 
-    <textarea id="codearea"></textarea>
+          <p><input id="nextbutton" class="btn btn-primary" type="button" value="Eval"></p>
+          <!-- <input id="backbutton" type="button" value="▶"> -->
+          <!-- <input id="restartbutton" type="button" value="Restart"> -->
+        </div>
 
-    <ul>
-      <li><input id="nextbutton" type="button" value="Eval"></li>
-      <!-- <li><input id="backbutton" type="button" value="▶"></li> -->
-      <!-- <li><input id="restartbutton" type="button" value="Restart"></li> -->
-    </ul>
+        <div class="col-xs-12 col-sm-6 col-md-6">
 
-    <pre><code id="proofarea"></code></pre>
-    <pre><code id="infoarea"></code></pre>
+          <pre><code id="proofarea"></code></pre>
+          <pre><code id="infoarea"></code></pre>
+
+          <a href="readme.html">説明</a>
+        </div>
+      </div>
+    </div>
 
     <script type="text/javascript" src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
     <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
