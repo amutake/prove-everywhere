@@ -4,7 +4,7 @@
 name:                prove-everywhere-server
 version:             0.1
 synopsis:            The server for ProveEverywhere
--- description:
+description:         This is the server for ProveEverywhere project.
 homepage:            https://github.com/amutake/prove-everywhere
 license:             BSD3
 license-file:        LICENSE
